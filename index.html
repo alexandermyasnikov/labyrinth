@@ -216,7 +216,7 @@ function activeTarget(){
 }
 
 // ========== Состояние ==========
-let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
+let wall, player, chest, exitPos, keyPos, river=[], rivers=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
     visGrid = [], shooterAim = new Set();
@@ -302,7 +302,58 @@ function reachable(){
   return mark;
 }
 
+// Гарантирует, что из устья каждой реки есть открытый выход в соседнюю не-речную клетку.
+function ensureRiverExit(){
+  function isRiver(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true; return false; }
+  for(const R of rivers){
+    const [mr,mc]=R.mouth;
+    for(let i=0;i<4;i++){
+      const d = (rand(4)+i)%4, nr=mr+DIRS[d][0], nc=mc+DIRS[d][1];
+      if(nr<0||nr>=H||nc<0||nc>=W||isRiver(nr,nc)) continue;
+      // открываем проход устье ↔ сосед
+      wall[mr][mc][d]=false;
+      wall[nr][nc][d^1]=false;
+      break;
+    }
+  }
+}
+
 // ========== Инициализация ==========
+// Строит 2-3 прямые реки (горизонтальные/вертикальные) длиной 6-10 клеток.
+// Устье каждой реки — последняя клетка прямой. Реки не пересекаются между собой.
+// Для последующей связности используется уже построенный лабиринт (стены).
+function genRivers(){
+  const used = Array.from({length:H},()=>Array(W).fill(false));
+  for(const c of river) used[c[0]][c[1]]=true;
+  const res = [];
+  const nRivers = 2 + rand(2); // 2-3
+  for(let k=0;k<nRivers*20;k++){
+    if(res.length>=nRivers) break;
+    const horiz = rand(2)===0;
+    const len = 6 + rand(5); // 6..10
+    // выбираем старт с запасом в направлении движения
+    let r, c;
+    if(horiz){
+      r = rand(H);
+      c = rand(W - len + 1); // вправо: хватает len клеток
+    } else {
+      c = rand(W);
+      r = rand(H - len + 1); // вниз: хватает len клеток
+    }
+    const cells=[];
+    let ok=true;
+    for(let i=0;i<len;i++){
+      const nr = r + (horiz?0:i), nc = c + (horiz?i:0);
+      if(used[nr][nc]){ ok=false; break; }
+      cells.push([nr,nc]);
+    }
+    if(!ok) continue;
+    for(const [cr,cc] of cells) used[cr][cc]=true;
+    res.push({ cells, mouth: cells[cells.length-1].slice() });
+  }
+  if(!res.length) res.push({ cells:[[1,1],[1,2],[1,3],[1,4],[1,5],[1,6]], mouth:[1,6] });
+  return res;
+}
 function init(){
   overlay.hidden = true;
   if (timerId) { clearInterval(timerId); timerId = null; }
@@ -315,13 +366,17 @@ function init(){
   dashFlash = null;
   wall = genWalls();
   ensureConnected();
-  const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
+  rivers = genRivers();
+  ensureRiverExit();
+  // клетки рек исключаем из пула для всех объектов, чтобы избежать пересечений
+  const riverSet = new Set(rivers.flatMap(R=>R.cells.map(([a,b])=>a+','+b)));
+  const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(!riverSet.has(r+','+c)) cells.push([r,c]);
   shuffle(cells);
   player = cells[0];
   exitPos = cells[1];
   chest = cells[2];
   keyPos = cells[16];
-  river = cells.slice(3,7);
+  river = [];
   holes = cells.slice(7,11);
   arsenal = cells.slice(11,13);
   hospital = cells[13];
@@ -373,7 +428,7 @@ function init(){
 // ========== Сохранение партии (localStorage) ==========
 function saveGame(){
   const state = {
-    player, chest, exitPos, river, holes, arsenal, hospital, trap, bears,
+    player, chest, exitPos, river, rivers, holes, arsenal, hospital, trap, bears,
     health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
@@ -385,7 +440,8 @@ function loadGame(){
   if(!data) return false;
   init(); // стены генерируются заново, остальное переопределяется сохранением
   player = data.player; chest = data.chest; exitPos = data.exitPos;
-  river = data.river; holes = data.holes; arsenal = data.arsenal;
+  river = data.river; rivers = data.rivers || (data.river && data.river.length ? [{cells:data.river, mouth:data.river[0].slice()}] : []);
+  holes = data.holes; arsenal = data.arsenal;
   hospital = data.hospital; trap = data.trap; bears = data.bears;
   health = data.health; bombs = data.bombs; carrying = data.carrying;
   carryingKey = data.carryingKey; keyPos = data.keyPos;
@@ -485,18 +541,28 @@ function dash(dr,dc){
   sfx('step');
   msg('Рывок!'); saveGame(); render();
 }
-// Река: попав на речную клетку, течение несёт игрока на 2 звена вперёд по кольцу реки.
-function riverJump(){
-  let idx = river.findIndex(([rr,cc])=>rr===player[0]&&cc===player[1]);
-  if(idx<0) return;
-  idx = (idx+2) % river.length;
-  player = river[idx].slice();
-  markExplored();
+// Река: попав на речную клетку (кроме устья), игрок переносится в её устье.
+function riverMouthOf(r,c){
+  for(const R of rivers){
+    if(isMouth(r,c,R)) return null; // на устье — не сношу
+    for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return R.mouth;
+  }
+  return null;
+}
+function isMouth(r,c,R){ return R.mouth[0]===r && R.mouth[1]===c; }
+function inRiverCell(cell){
+  const [r,c]=cell;
+  for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true;
+  return false;
 }
 
 function onEnter(cell){
   const [r,c]=cell;
-  if(inList(cell, river)){ sfx('river'); riverJump(); camR=camC=1; moving=false; msg('Река! Течение несёт тебя (+2 звена).'); return; }
+  if(inRiverCell(cell)){
+    const mouth = riverMouthOf(r,c);
+    if(mouth){ sfx('river'); player = mouth.slice(); markExplored(); camR=camC=1; moving=false; msg('Река! Течение несёт тебя в устье.'); }
+    return;
+  }
   if(inList(cell, holes)){ sfx('hole'); msg('Дырка — провал! Ты выходишь из другой дырки.'); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
   if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg('Арсенал! Здоровье и бомбы восстановлены (5).'); return; }
   if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg('Госпиталь! Здоровье восстановлено.'); return; }
@@ -902,7 +968,8 @@ function cellSymbol(r,c){
   if(inList([r,c],fire)) return '🔥';
   if(r===hospital[0]&&c===hospital[1]) return '💉';
   if(inList([r,c],arsenal)) return '📦';
-  if(inList([r,c],river)) return '🌊';
+  for(const R of rivers) if(isMouth(r,c,R)) return '⛲'; // устье реки
+  if(inRiverCell([r,c])) return '🌊';
   if(inList([r,c],holes)) return '🕳';
   if(inList([r,c],trap)) return '⚠️';
   return '';
