@@ -819,7 +819,7 @@ function render(){
     // подложка
     if(sym==='🚩') ctx.fillStyle='#3a2f14';
     else if(sym==='💰') ctx.fillStyle='#3a3318';
-    else if(sym==='🌀'||sym==='⛲') ctx.fillStyle='#17324a';
+    else if(sym==='🌀') ctx.fillStyle='#17324a';
     else if(sym==='🕳') ctx.fillStyle='#1a1a1f';
     else if(sym==='📦') ctx.fillStyle='#2f2a18';
     else if(sym==='💉') ctx.fillStyle='#2a1f24';
@@ -983,7 +983,7 @@ function cellSymbol(r,c){
   if(inList([r,c],fire)) return '🔥';
   if(r===hospital[0]&&c===hospital[1]) return '💉';
   if(inList([r,c],arsenal)) return '📦';
-  for(const R of rivers) if(isMouth(r,c,R)) return '⛲'; // устье реки
+  for(const R of rivers) if(isMouth(r,c,R)) return '🌀'; // устье реки
   if(inRiverCell([r,c])) return '🌀';
   if(inList([r,c],holes)) return '🕳';
   if(inList([r,c],trap)) return '⚠️';
