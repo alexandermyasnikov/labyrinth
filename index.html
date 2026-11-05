@@ -82,7 +82,7 @@
     <span>Компас: <b id="hud-compass">?</b></span>
     <span>Время: <b id="hud-time">--</b></span>
   </div>
-  <canvas id="cv" width="1120" height="1120"></canvas>
+  <canvas id="cv" width="560" height="560"></canvas>
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
@@ -575,17 +575,21 @@ function endTimeout(){
 }
 
 // ========== Рендер (камера за игроком, он всегда в центре) ==========
-const N = 1120, C = N/2;
+const VIEW = 10; // размер окна просмотра на экране (клеток)
 const CS = 56;
+const N = VIEW * CS, C = N/2;
 function render(){
   updateHUD();
   ctx.clearRect(0,0,N,N);
   const drawP = drawPos(), drawR = drawP[0], drawC = drawP[1];
+  const baseR = Math.round(drawR), baseC = Math.round(drawC);
+  const r0 = Math.max(0, baseR - 4), r1 = Math.min(H-1, baseR + 5);
+  const c0 = Math.max(0, baseC - 4), c1 = Math.min(W-1, baseC + 5);
   const sx = r => C + (r - drawR) * CS; // экранная строка
   const sc = c => C + (c - drawC) * CS; // экранный столбец
 
   // Слой карты-памяти: разведанные клетки вне активной (видимой) зоны, затемнённые.
-  for(let r=0;r<H;r++) for(let c=0;c<W;c++){
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
     if(!explored[r][c] || visible(r,c)) continue;
     const x=sc(c), y=sx(r);
     if(x<-CS||x>N||y<-CS||y>N) continue;
@@ -594,7 +598,7 @@ function render(){
   }
 
   // замкнутые по стенам столбы: клетки + стены, только если видны
-  for(let r=0;r<H;r++) for(let c=0;c<W;c++){
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
     if(!visible(r,c)) continue;
     const x=sc(c), y=sx(r);
     const sym=cellSymbol(r,c);
@@ -617,7 +621,7 @@ function render(){
   }
   // стены
   ctx.strokeStyle='#05070b'; ctx.lineWidth=5; ctx.lineCap='round';
-  for(let r=0;r<H;r++) for(let c=0;c<W;c++){
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
     if(!visible(r,c)) continue;
     const x=sc(c), y=sx(r);
     for(let d=0;d<4;d++){
