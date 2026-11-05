@@ -221,6 +221,7 @@ let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospit
     visGrid = [], shooterAim = new Set();
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
 let boom = null; // взрыв стены: {r,c, t0}
+let dashFlash = null; // след рывка: {r,c, t0}
 const LEVEL_TIME = 300; // секунд на уровень (5 минут)
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
@@ -310,6 +311,7 @@ function init(){
   shooterAim.clear();
   shots = [];
   boom = null;
+  dashFlash = null;
   wall = genWalls();
   ensureConnected();
   const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
@@ -478,6 +480,7 @@ function dash(dr,dc){
   markExplored(); computeVisibility();
   dashUntil = now + 1500;
   dashDr=dr; dashDc=dc;
+  dashFlash = { r: player[0], c: player[1], t0: now };
   sfx('step');
   msg('Рывок!'); saveGame(); render();
 }
@@ -797,6 +800,16 @@ function render(){
       ctx.lineWidth = 6*(1-bt);
       ctx.beginPath(); ctx.arc(bx, by, CS*0.4 + bt*CS*0.9, 0, 7); ctx.stroke();
     } else boom = null;
+  }
+  // след рывка (~0.25с белая вспышка)
+  if(dashFlash){
+    const dt = (nowS - dashFlash.t0)/250;
+    if(dt < 1){
+      const dx = sc(dashFlash.c)+CS/2, dy = sx(dashFlash.r)+CS/2;
+      ctx.strokeStyle = 'rgba(255,255,255,'+(1-dt).toFixed(2)+')';
+      ctx.lineWidth = 3*(1-dt);
+      ctx.beginPath(); ctx.arc(dx, dy, CS*0.3 + dt*CS*0.8, 0, 7); ctx.stroke();
+    } else dashFlash = null;
   }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
