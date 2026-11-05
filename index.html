@@ -577,7 +577,7 @@ function zombieTurn(){
   }
 }
 
-// Стрелок: замечает игрока на дистанции ≤3 → целится (🎯) → стреляет.
+// Стрелок: замечает игрока на дистанции ≤3 → целится (🏹) → стреляет.
 function shooterTurn(){
   if(over) return;
   for(const s of shooters){
@@ -782,7 +782,7 @@ function render(){
   }
   // стрелки (только если видны)
   for(const s of shooters){
-    if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🎯' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
+    if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🏹' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
   }
   // летящие пули (анимация ~0.25с)
   const nowS = Date.now();
