@@ -86,7 +86,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span>
+    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>🔫 стрелок</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -135,6 +135,7 @@ function sfx(type){
       river:  [520,'sine',   .25,.20],
       hole:   [160,'sine',   .18,.25],
       key:    [700,'sine',   .15,.22],
+      shoot:  [400,'square', .12,.25],
       win:    [880,'sine',   .35,.35],
       lose:   [90, 'sawtooth',.4,.40],
       aim:    [500,'sine',   .08,.15],
@@ -180,7 +181,7 @@ function showOverlay(title, color, statsHtml){
 }
 function updateHUD(){
   const dim = s=>'<span style="opacity:.3">'+s+'</span>';
-  const hpOn=Math.max(0,health), hpOff=Math.max(0,3-health);
+  const hpOn=Math.max(0,health), hpOff=Math.max(0,5-health);
   const bmOn=Math.max(0,bombs), bmOff=Math.max(0,3-bombs);
   hudHp.innerHTML = '♥'.repeat(hpOn) + (hpOff? dim('♥'.repeat(hpOff)):'');
   hudBombs.innerHTML = '💣'.repeat(bmOn) + (bmOff? dim('💣'.repeat(bmOff)):'');
@@ -207,8 +208,8 @@ function activeTarget(){
 
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
-    trap=[], bears=[], fire=[], zombies=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
-    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null,
+    trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
+    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
     visGrid = [];
 const LEVEL_TIME = 90; // секунд на уровень
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
@@ -289,6 +290,7 @@ function init(){
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
+  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   wall = genWalls();
   ensureConnected();
   const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
@@ -310,7 +312,8 @@ function init(){
   fire = cells.slice(24, 24 + Math.min(level - 1, 3));
   const extraZombie = Math.min(level - 1, 30);
   zombies = cells.slice(34, 34 + extraZombie);
-  health = 3;
+  shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
+  health = 5;
   bombs = 3;
   carrying = false;
   carryingKey = false;
@@ -334,13 +337,15 @@ function init(){
   bearTimerId = setInterval(()=>{ if(!over) bearTurn(); }, 1500);
   // зомби ходят медленно, каждые 2.5с
   zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 2500);
+  // стрелки ходят и стреляют, каждые 2с
+  shooterTimerId = setInterval(()=>{ if(!over) shooterTurn(); }, 2000);
 }
 
 // ========== Сохранение партии (localStorage) ==========
 function saveGame(){
   const state = {
     player, chest, exitPos, river, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -359,6 +364,7 @@ function loadGame(){
   explored = data.explored;
   fire = data.fire || [];
   zombies = data.zombies || [];
+  shooters = data.shooters || [];
   markExplored();
   render(); updateHUD();
   return true;
@@ -521,6 +527,29 @@ function zombieTurn(){
   }
 }
 
+// Стрелок: ходит по карте, если видит игрока на дистанции ≤3 — стреляет (урон −1).
+function shooterTurn(){
+  if(over) return;
+  for(const s of shooters){
+    if(over) break;
+    const [sr,sc]=s;
+    const dist = Math.abs(sr-player[0])+Math.abs(sc-player[1]);
+    if(dist <= 3 && visGrid[sr][sc]){
+      sfx('shoot');
+      health--; msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
+      if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+      if(health<=0) endLose();
+      continue; // в этот такт только стреляет, не ходит
+    }
+    // иначе блуждает случайно по проходам
+    const ops=[];
+    for(let d=0;d<4;d++){ if(!wall[sr][sc][d]){ const nr=sr+DIRS[d][0], nc=sc+DIRS[d][1]; ops.push([nr,nc]); } }
+    if(!ops.length) continue;
+    const mv = ops[rand(ops.length)];
+    s[0]=mv[0]; s[1]=mv[1];
+  }
+}
+
 // Бомба взрывает стену в заданном направлении (игрок не двигается).
 function bomb(dr,dc){
   if(over) return;
@@ -570,6 +599,7 @@ function endWin(){
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
+  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
     'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -585,6 +615,7 @@ function endLose(){
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
+  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
     '<br>Уровень сброшен до 1');
@@ -598,6 +629,7 @@ function endTimeout(){
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
+  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   carrying = false; // клад при проигрыше не переносится
   level = 1;
   msg('⏰ Время вышло!');
@@ -678,6 +710,10 @@ function render(){
   // зомби (только если видны)
   for(const z of zombies){
     if(visible(z[0],z[1])) drawEmoji('🧟', sc(z[1])+CS/2, sx(z[0])+CS/2, 24);
+  }
+  // стрелки (только если видны)
+  for(const s of shooters){
+    if(visible(s[0],s[1])) drawEmoji('🔫', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
   }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
