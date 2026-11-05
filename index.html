@@ -627,8 +627,6 @@ function render(){
     for(let d=0;d<4;d++){
       const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
       const outOfWorld = nr<0||nr>=H||nc<0||nc>=W;
-      const hidden = !outOfWorld && !visible(nr,nc);
-      if(hidden) continue; // сосед в тумане — стену к нему не выдаём
       const there = outOfWorld ? true : wall[r][c][d];
       if(!there) continue;
       if(d===0) line(x,y,x+CS,y);
