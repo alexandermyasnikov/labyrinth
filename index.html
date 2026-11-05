@@ -86,7 +86,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span>
+    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -207,7 +207,7 @@ function activeTarget(){
 
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
-    trap=[], bears=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
+    trap=[], bears=[], fire=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null;
 const LEVEL_TIME = 90; // секунд на уровень
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
@@ -300,10 +300,11 @@ function init(){
   hospital = cells[13];
   // сложность растёт с уровнем (уровень 1 = базовый набор, как раньше)
   const extraTrap = Math.min(level - 1, 3);
-  const extraBear = Math.min(level - 1, 2);
-  // ловушки занимают блок 14..18, медведи — непересекающийся блок с 19 — не пересекаются
+  const extraBear = Math.min(level - 1, 4);
+  // ловушки занимают блок 14..18, медведи — непересекающийся блок с 19, огненные ловушки — с 24
   trap = cells.slice(14, 14 + 2 + extraTrap);
   bears = [cells[19]].concat(cells.slice(20, 20 + extraBear));
+  fire = cells.slice(24, 24 + Math.min(level - 1, 3));
   health = 3;
   bombs = 3;
   carrying = false;
@@ -329,7 +330,7 @@ function init(){
 function saveGame(){
   const state = {
     player, chest, exitPos, river, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -346,6 +347,7 @@ function loadGame(){
   carryingKey = data.carryingKey; keyPos = data.keyPos;
   level = data.level; moves = data.moves; timeLeft = data.timeLeft; over = data.over;
   explored = data.explored;
+  fire = data.fire || [];
   markExplored();
   render(); updateHUD();
   return true;
@@ -427,6 +429,7 @@ function onEnter(cell){
     } else msg('Осторожно — здесь была ловушка, но ты не сработал её.');
     return;
   }
+  if(inList(cell, fire)){ sfx('bear'); health--; msg('Огненная ловушка! Ты обожжён. Здоровье: '+health); if(health<=0) endLose(); return; }
   if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg('Ключ взят! Теперь можно открыть дверь к выходу.'); keyPos=null; saveGame(); }
   if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg('Ты взял сундук! Отнеси его к выходу (🚩).'); saveGame(); }
   if(cell[0]===exitPos[0]&&cell[1]===exitPos[1]){
@@ -609,6 +612,10 @@ function render(){
   for(const bear of bears){
     if(visible(bear[0],bear[1])) drawEmoji('🐻', sc(bear[1])+CS/2, sx(bear[0])+CS/2, 28);
   }
+  // огненные ловушки (только если видны)
+  for(const f of fire){
+    if(visible(f[0],f[1])) drawEmoji('🔥', sc(f[1])+CS/2, sx(f[0])+CS/2, 22);
+  }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
   glow.addColorStop(0,'rgba(255,209,102,.5)'); glow.addColorStop(1,'rgba(255,209,102,0)');
@@ -659,6 +666,7 @@ function cellSymbol(r,c){
   if(keyPos&&r===keyPos[0]&&c===keyPos[1]) return '🗝️';
   if(r===chest[0]&&c===chest[1]) return '💰';
   if(r===exitPos[0]&&c===exitPos[1]) return '🚩';
+  if(inList([r,c],fire)) return '🔥';
   if(r===hospital[0]&&c===hospital[1]) return '💉';
   if(inList([r,c],arsenal)) return '📦';
   if(inList([r,c],river)) return '🌊';
