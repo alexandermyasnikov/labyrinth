@@ -603,10 +603,10 @@ function render(){
     if(visible(bear[0],bear[1])) drawEmoji('🐻', sc(bear[1])+CS/2, sx(bear[0])+CS/2, 28);
   }
   // игрок — всегда в центре с мягким свечением
-  const glow = ctx.createRadialGradient(C,C,4,C,C,34);
+  const glow = ctx.createRadialGradient(C,C,4,C,C,28);
   glow.addColorStop(0,'rgba(255,209,102,.5)'); glow.addColorStop(1,'rgba(255,209,102,0)');
-  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(C,C,34,0,7); ctx.fill();
-  drawEmoji('🧙', C, C, 40);
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(C,C,26,0,7); ctx.fill();
+  drawEmoji('🧙', C, C, 50);
   // пульс-подсказка направления к цели раз в 12 ходов
   if (moves % 12 === 0){
     const [ar, ac] = activeTarget();
@@ -626,13 +626,17 @@ function render(){
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
 // Рисует эмодзи так, чтобы точка (cx,cy) была визуальным центром глифа.
-// textBaseline='middle' + textAlign='center' привязывают к геометрическому центру эмодзи-глифа.
+// textAlign/textBaseline='middle' привязывают к центру эм-бокса шрифта;
+// дополнительно сдвигаем на разницу ascent/descent, чтобы центр глифа совпал с точкой.
 function drawEmoji(sym, cx, cy, size){
   ctx.save();
-  ctx.font = size + 'px sans-serif'; // sans-serif надёжнее для эмодзи-фоллбэка
+  ctx.font = size + 'px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(sym, cx, cy);
+  const m = ctx.measureText(sym);
+  const ascent = m.actualBoundingBoxAscent === undefined ? size*0.82 : m.actualBoundingBoxAscent;
+  const descent = m.actualBoundingBoxDescent === undefined ? size*0.18 : m.actualBoundingBoxDescent;
+  ctx.fillText(sym, cx, cy + (ascent - descent) * 0.12);
   ctx.restore();
 }
 
