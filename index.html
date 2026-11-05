@@ -625,19 +625,27 @@ function render(){
 }
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
-// Рисует эмодзи так, чтобы точка (cx,cy) была визуальным центром глифа.
-// textAlign/textBaseline='middle' привязывают к центру эм-бокса шрифта;
-// дополнительно сдвигаем на разницу ascent/descent, чтобы центр глифа совпал с точкой.
+// Рисует эмодзи так, чтобы его визуальный центр был точно в точке (cx,cy).
+// Сначала рисуем во временный канвас, ищем bbox по непрозрачным пикселям,
+// затем отрисовываем смещённый — работает одинаково во всех браузерах.
+let off = null, octx = null;
 function drawEmoji(sym, cx, cy, size){
-  ctx.save();
-  ctx.font = size + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const m = ctx.measureText(sym);
-  const ascent = m.actualBoundingBoxAscent === undefined ? size*0.82 : m.actualBoundingBoxAscent;
-  const descent = m.actualBoundingBoxDescent === undefined ? size*0.18 : m.actualBoundingBoxDescent;
-  ctx.fillText(sym, cx, cy + (ascent - descent) * 0.12);
-  ctx.restore();
+  if(!off){ off = document.createElement('canvas'); octx = off.getContext('2d'); }
+  off.width = size; off.height = size;
+  octx.clearRect(0,0,size,size);
+  octx.font = size + 'px sans-serif';
+  octx.textAlign = 'center'; octx.textBaseline = 'middle';
+  octx.fillText(sym, size/2, size/2);
+  const img = octx.getImageData(0,0,size,size);
+  const d = img.data; const n = size*4;
+  let minX=size, maxX=0, minY=size, maxY=0;
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+    const a = d[(y*size+x)*4+3];
+    if(a>10){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  let bx = maxX>minX ? (minX+maxX)/2 : size/2;
+  let by = maxY>minY ? (minY+maxY)/2 : size/2;
+  ctx.drawImage(off, cx - bx, cy - by);
 }
 
 function cellSymbol(r,c){
