@@ -86,7 +86,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span>
+    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -207,8 +207,8 @@ function activeTarget(){
 
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
-    trap=[], bears=[], fire=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
-    timeLeft = 0, timerId = null, bearTimerId = null,
+    trap=[], bears=[], fire=[], zombies=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
+    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null,
     visGrid = [];
 const LEVEL_TIME = 90; // секунд на уровень
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
@@ -288,6 +288,7 @@ function init(){
   overlay.hidden = true;
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
+  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   wall = genWalls();
   ensureConnected();
   const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
@@ -307,6 +308,8 @@ function init(){
   trap = cells.slice(14, 14 + 2 + extraTrap);
   bears = [cells[19]].concat(cells.slice(20, 20 + extraBear));
   fire = cells.slice(24, 24 + Math.min(level - 1, 3));
+  const extraZombie = Math.min(level - 1, 30);
+  zombies = cells.slice(34, 34 + extraZombie);
   health = 3;
   bombs = 3;
   carrying = false;
@@ -329,13 +332,15 @@ function init(){
   }, 1000);
   // медведи ходят независимо от игрока: каждые 1.5с
   bearTimerId = setInterval(()=>{ if(!over) bearTurn(); }, 1500);
+  // зомби ходят медленно, каждые 2.5с
+  zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 2500);
 }
 
 // ========== Сохранение партии (localStorage) ==========
 function saveGame(){
   const state = {
     player, chest, exitPos, river, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -353,6 +358,7 @@ function loadGame(){
   level = data.level; moves = data.moves; timeLeft = data.timeLeft; over = data.over;
   explored = data.explored;
   fire = data.fire || [];
+  zombies = data.zombies || [];
   markExplored();
   render(); updateHUD();
   return true;
@@ -492,6 +498,29 @@ function bearTurn(){
   }
 }
 
+// Зомби: преследуют игрока медленно, только если расстояние ≤5 клеток, кусают если в соседней.
+function zombieTurn(){
+  if(over) return;
+  for(const z of zombies){
+    if(over) break;
+    const [zr,zc]=z;
+    const dist = Math.abs(zr-player[0])+Math.abs(zc-player[1]);
+    if(dist > 5) continue; // слишком далеко — не идёт
+    const ops=[];
+    for(let d=0;d<4;d++){ if(!wall[zr][zc][d]){ const nr=zr+DIRS[d][0], nc=zc+DIRS[d][1]; ops.push([nr,nc]); } }
+    if(!ops.length) continue;
+    let best=ops[0], bestDist=Math.abs(best[0]-player[0])+Math.abs(best[1]-player[1]);
+    for(const o of ops){ const dd=Math.abs(o[0]-player[0])+Math.abs(o[1]-player[1]); if(dd<bestDist){ bestDist=dd; best=o; } }
+    z[0]=best[0]; z[1]=best[1];
+    if(Math.abs(z[0]-player[0])+Math.abs(z[1]-player[1]) === 1){
+      sfx('bear');
+      health--; msg('Зомби укусил! Здоровье: '+health);
+      if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+      if(health<=0) endLose();
+    }
+  }
+}
+
 // Бомба взрывает стену в заданном направлении (игрок не двигается).
 function bomb(dr,dc){
   if(over) return;
@@ -540,6 +569,7 @@ function endWin(){
   msg('🏆 ПОБЕДА! Ты вынес сундук из лабиринта.'); info('Уровень ' + level + '! Сложность растёт. Нажми R, чтобы сыграть ещё.');
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
+  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
     'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -554,6 +584,7 @@ function endLose(){
   msg('💀 Ты погиб. Игра окончена.'); info('Нажми R, чтобы сыграть ещё.');
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
+  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
     '<br>Уровень сброшен до 1');
@@ -566,6 +597,7 @@ function endTimeout(){
   saveGame();
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
+  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   carrying = false; // клад при проигрыше не переносится
   level = 1;
   msg('⏰ Время вышло!');
@@ -642,6 +674,10 @@ function render(){
   // огненные ловушки (только если видны)
   for(const f of fire){
     if(visible(f[0],f[1])) drawEmoji('🔥', sc(f[1])+CS/2, sx(f[0])+CS/2, 22);
+  }
+  // зомби (только если видны)
+  for(const z of zombies){
+    if(visible(z[0],z[1])) drawEmoji('🧟', sc(z[1])+CS/2, sx(z[0])+CS/2, 24);
   }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
