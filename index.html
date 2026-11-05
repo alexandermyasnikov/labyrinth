@@ -577,6 +577,7 @@ function bomb(dr,dc){
     sfx('bomb');
     msg('Бум! Стена ' + DN[d] + ' взорвана. Бомб осталось: '+bombs);
     saveGame();
+    computeVisibility(); // стена ломается — пересчитываем зону видимости
   } else msg('Здесь нет стены.');
   render();
 }
