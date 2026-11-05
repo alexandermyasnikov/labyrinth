@@ -129,6 +129,7 @@ function sfx(type){
     o.connect(g); g.connect(actx.destination);
     const P = {
       move:   [340,'sine',   .06,.08],
+      step:   [220,'sine',   .04,.05],
       wall:   [120,'triangle',.05,.18],
       chest:  [660,'sine',   .12,.25],
       bomb:   [70, 'sawtooth',.25,.40],
@@ -448,7 +449,7 @@ function tryMove(dr,dc){
   player = [r+dr, c+dc];
   computeVisibility();
   markExplored();
-  sfx('move');
+  sfx('step');
   onEnter(player);
   if(!over) { moves++; }
   saveGame();
@@ -468,7 +469,7 @@ function dash(dr,dc){
   markExplored(); computeVisibility();
   dashUntil = now + 1500;
   dashDr=dr; dashDc=dc;
-  sfx('move');
+  sfx('step');
   msg('Рывок!'); saveGame(); render();
 }
 // Река: попав на речную клетку, течение несёт игрока на 2 звена вперёд по кольцу реки.
