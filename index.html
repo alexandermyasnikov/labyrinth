@@ -78,16 +78,15 @@
     <span>Бомбы: <b class="seat" id="hud-bombs">💣💣💣</b></span>
     <span>Клад: <b id="hud-chest">✖</b></span>
     <span>Ключ: <b id="hud-key">✖</b></span>
+    <span>Уровень: <b id="hud-level">1</b></span>
     <span>Компас: <b id="hud-compass">?</b></span>
     <span>Время: <b id="hud-time">--</b></span>
   </div>
   <canvas id="cv" width="560" height="560"></canvas>
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
-    <span>💉 госпиталь</span><span>📦 арсенал</span><span>🌊 река</span>
-    <span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span>
-    <span>❔ — сомнение</span><span>❌ — клада нет</span>
-    <span><span class="k">M</span> — пометить · клик — пометить клетку</span>
+    <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
+    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -95,7 +94,7 @@
     <div id="help-panel">
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
-      <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">B</span> — бомба (стена) · <span class="k">M</span> — маркер клетки · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
+      <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
       <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌊 река несёт на 2 звена · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
     </div>
   </div>
@@ -158,6 +157,7 @@ const hudHp = document.getElementById('hud-hp');
 const hudBombs = document.getElementById('hud-bombs');
 const hudChest = document.getElementById('hud-chest');
 const hudKey = document.getElementById('hud-key');
+const hudLevel = document.getElementById('hud-level');
 const hudCompass = document.getElementById('hud-compass');
 const hudTime = document.getElementById('hud-time');
 const overlay = document.getElementById('overlay');
@@ -186,6 +186,7 @@ function updateHUD(){
   hudBombs.innerHTML = '💣'.repeat(bmOn) + (bmOff? dim('💣'.repeat(bmOff)):'');
   hudChest.textContent = carrying ? '✔' : '✖';
   hudKey.textContent = carryingKey ? '✔' : '✖';
+  hudLevel.textContent = level;
   const [ar, ac] = activeTarget();
   const [pr, pc] = player;
   let dir = '';
