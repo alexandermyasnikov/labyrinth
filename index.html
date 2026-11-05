@@ -88,7 +88,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
+    <span>🌀 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -97,7 +97,7 @@
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌊 река несёт на 2 звена · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
+      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 река несёт на 1-2 клетки вниз по течению · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -541,26 +541,41 @@ function dash(dr,dc){
   sfx('step');
   msg('Рывок!'); saveGame(); render();
 }
-// Река: попав на речную клетку (кроме устья), игрок переносится в её устье.
-function riverMouthOf(r,c){
-  for(const R of rivers){
-    if(isMouth(r,c,R)) return null; // на устье — не сношу
-    for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return R.mouth;
-  }
-  return null;
-}
+// Река: нахождение реки, содержащей клетку, и направление сноса к устью.
+function riverOf(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return R; return null; }
 function isMouth(r,c,R){ return R.mouth[0]===r && R.mouth[1]===c; }
 function inRiverCell(cell){
   const [r,c]=cell;
   for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true;
   return false;
 }
+// Постепенный снос: возвращает позицию на 1-2 клетки ближе к устью (вдоль прямой реки).
+// Каждый ход река несёт игрока на 1-2 клетки; скорость чуть выше обычного хода.
+function carryRiver(r,c){
+  const R = riverOf(r,c);
+  if(!R || isMouth(r,c,R)) return null; // не река или уже в устье — не несёт
+  const [mr,mc] = R.mouth;
+  const sr = Math.sign(mr-r), sc = Math.sign(mc-c); // шаг к устью
+  let nr=r+sr, nc=c+sc;
+  let steps = 1;
+  if(rand(2)===0 && !(nr===mr&&nc===mc)){ // сносим 2 клетки, если не пришли в устье
+    nr+=sr; nc+=sc; steps=2;
+  }
+  return [nr,nc];
+}
 
 function onEnter(cell){
   const [r,c]=cell;
   if(inRiverCell(cell)){
-    const mouth = riverMouthOf(r,c);
-    if(mouth){ sfx('river'); player = mouth.slice(); markExplored(); camR=camC=1; moving=false; msg('Река! Течение несёт тебя в устье.'); }
+    const mv = carryRiver(r,c); // постепенный снос на 1-2 клетки к устью
+    if(mv){
+      sfx('river');
+      player = mv;
+      // если снова на реке (не устье) и пройдено меньше 2 клеток — не зацикливаем; снесём следующим ходом
+      markExplored();
+      camR=camC=1; moving=false;
+      msg('Река несёт тебя вниз по течению.');
+    }
     return;
   }
   if(inList(cell, holes)){ sfx('hole'); msg('Дырка — провал! Ты выходишь из другой дырки.'); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
@@ -804,7 +819,7 @@ function render(){
     // подложка
     if(sym==='🚩') ctx.fillStyle='#3a2f14';
     else if(sym==='💰') ctx.fillStyle='#3a3318';
-    else if(sym==='🌊') ctx.fillStyle='#17324a';
+    else if(sym==='🌀'||sym==='⛲') ctx.fillStyle='#17324a';
     else if(sym==='🕳') ctx.fillStyle='#1a1a1f';
     else if(sym==='📦') ctx.fillStyle='#2f2a18';
     else if(sym==='💉') ctx.fillStyle='#2a1f24';
@@ -969,7 +984,7 @@ function cellSymbol(r,c){
   if(r===hospital[0]&&c===hospital[1]) return '💉';
   if(inList([r,c],arsenal)) return '📦';
   for(const R of rivers) if(isMouth(r,c,R)) return '⛲'; // устье реки
-  if(inRiverCell([r,c])) return '🌊';
+  if(inRiverCell([r,c])) return '🌀';
   if(inList([r,c],holes)) return '🕳';
   if(inList([r,c],trap)) return '⚠️';
   return '';
