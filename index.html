@@ -75,7 +75,7 @@
   <div id="bestline"></div>
   <div class="hud">
     <span>Здоровье: <b class="heart" id="hud-hp">♥♥♥</b></span>
-    <span>Бомбы: <b class="seat" id="hud-bombs">💣💣💣</b></span>
+    <span>Бомбы: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
     <span>Клад: <b id="hud-chest">✖</b></span>
     <span>Ключ: <b id="hud-key">✖</b></span>
     <span>Уровень: <b id="hud-level">1</b></span>
@@ -182,7 +182,7 @@ function showOverlay(title, color, statsHtml){
 function updateHUD(){
   const dim = s=>'<span style="opacity:.3">'+s+'</span>';
   const hpOn=Math.max(0,health), hpOff=Math.max(0,5-health);
-  const bmOn=Math.max(0,bombs), bmOff=Math.max(0,3-bombs);
+  const bmOn=Math.max(0,bombs), bmOff=Math.max(0,5-bombs);
   hudHp.innerHTML = '♥'.repeat(hpOn) + (hpOff? dim('♥'.repeat(hpOff)):'');
   hudBombs.innerHTML = '💣'.repeat(bmOn) + (bmOff? dim('💣'.repeat(bmOff)):'');
   hudChest.textContent = carrying ? '✔' : '✖';
@@ -315,7 +315,7 @@ function init(){
   zombies = cells.slice(34, 34 + extraZombie);
   shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
   health = 5;
-  bombs = 3;
+  bombs = 5;
   carrying = false;
   carryingKey = false;
   over = false;
@@ -452,8 +452,8 @@ function onEnter(cell){
   const [r,c]=cell;
   if(inList(cell, river)){ sfx('river'); riverJump(); camR=camC=1; moving=false; msg('Река! Течение несёт тебя (+2 звена).'); return; }
   if(inList(cell, holes)){ sfx('hole'); msg('Дырка — провал! Ты выходишь из другой дырки.'); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
-  if(inList(cell, arsenal)){ sfx('heal'); health=3; bombs=3; msg('Арсенал! Здоровье и бомбы восстановлены (3).'); return; }
-  if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=3; msg('Госпиталь! Здоровье восстановлено.'); return; }
+  if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg('Арсенал! Здоровье и бомбы восстановлены (5).'); return; }
+  if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg('Госпиталь! Здоровье восстановлено.'); return; }
   if(inList(cell, trap)){
     if(rand(2)===0){
       sfx('bear');
