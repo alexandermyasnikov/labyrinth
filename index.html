@@ -773,6 +773,13 @@ function render(){
     g.addColorStop(0,'rgba(230,57,70,0)'); g.addColorStop(1,'rgba(230,57,70,'+(0.5*a).toFixed(2)+')');
     ctx.fillStyle=g; ctx.fillRect(0,0,N,N);
   }
+  // постоянная виньетка при мало здоровья (≤2 из 5), пульсирует
+  if(health<=2 && health>0){
+    const a = 0.15 + 0.12*Math.sin(now/300);
+    const g = ctx.createRadialGradient(C,C,N*0.5, C,C,N*0.8);
+    g.addColorStop(0,'rgba(200,40,50,0)'); g.addColorStop(1,'rgba(200,40,50,'+a.toFixed(2)+')');
+    ctx.fillStyle=g; ctx.fillRect(0,0,N,N);
+  }
 }
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
