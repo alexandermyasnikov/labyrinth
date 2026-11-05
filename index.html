@@ -199,7 +199,7 @@ function updateHUD(){
 }
 
 function activeTarget(){
-  if(!carryingKey) return keyPos;
+  if(!carryingKey) return keyPos || chest;
   if(!carrying) return chest;
   return exitPos;
 }
@@ -426,7 +426,7 @@ function onEnter(cell){
     } else msg('Осторожно — здесь была ловушка, но ты не сработал её.');
     return;
   }
-  if(cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg('Ключ взят! Теперь можно открыть дверь к выходу.'); keyPos=null; saveGame(); }
+  if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg('Ключ взят! Теперь можно открыть дверь к выходу.'); keyPos=null; saveGame(); }
   if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg('Ты взял сундук! Отнеси его к выходу (🚩).'); saveGame(); }
   if(cell[0]===exitPos[0]&&cell[1]===exitPos[1]){
     if(carrying && carryingKey && health>0) endWin();
