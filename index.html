@@ -71,7 +71,7 @@
 <body>
   <h1>ЛАБИРИНТ</h1>
   <div id="status">Найди сундук и вынеси его через выход.</div>
-  <div id="log">Стрелки / WASD — ход · B — бомба · R — заново</div>
+  <div id="log">Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново</div>
   <div id="bestline"></div>
   <div class="hud">
     <span>Здоровье: <b class="heart" id="hud-hp">♥♥♥</b></span>
@@ -94,7 +94,7 @@
     <div id="help-panel">
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
-      <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
+      <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
       <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌊 река несёт на 2 звена · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
     </div>
   </div>
@@ -218,6 +218,8 @@ let moving = false;     // идёт ли анимация
 let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
 let animFrom = null;    // логическая клетка-старт визуальной анимации
 let hurtUntil = 0;      // временной таймстамп конца красной вспышки при уроне
+let dashUntil = 0;      // кулдаун рывка (мс)
+let dashDr=0, dashDc=0; // направление текущего рывка
 let explored = []; // карта-память: разведанные клетки
 
 function msg(s){ statusEl.textContent = s; }
@@ -443,6 +445,23 @@ function tryMove(dr,dc){
   if(!over) { moves++; }
   saveGame();
   render();
+}
+// Рывок (Shift+направление): прыжок через 1 клетку, обе должны быть проходимыми. Кулдаун 1.5с.
+function dash(dr,dc){
+  if(over) return;
+  const now = Date.now();
+  if(now < dashUntil){ msg('Рывок ещё не готов.'); return; }
+  const r=player[0], c=player[1];
+  if(wall[r][c][nd(dr,dc)]){ msg('Стена!'); sfx('wall'); return; }
+  const r2=r+dr*2, c2=c+dc*2;
+  if(wall[r+dr][c+dc][nd(dr,dc)]){ msg('За стеной прохода нет — рывок не прошёл.'); return; }
+  // обе клетки на пути свободны
+  player=[r2,c2];
+  markExplored(); computeVisibility();
+  dashUntil = now + 1500;
+  dashDr=dr; dashDc=dc;
+  sfx('move');
+  msg('Рывок!'); saveGame(); render();
 }
 // Река: попав на речную клетку, течение несёт игрока на 2 звена вперёд по кольцу реки.
 function riverJump(){
@@ -850,6 +869,7 @@ document.addEventListener('keydown', e=>{
   if(mv){
     e.preventDefault();
     if(aiming){ aiming=false; bomb(mv[0],mv[1]); }
+    else if(e.shiftKey){ dash(mv[0],mv[1]); }
     else tryMove(mv[0],mv[1]);
   }
 });
