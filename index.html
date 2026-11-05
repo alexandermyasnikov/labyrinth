@@ -311,7 +311,7 @@ function init(){
   trap = cells.slice(14, 14 + 2 + extraTrap);
   bears = [cells[19]].concat(cells.slice(20, 20 + extraBear));
   fire = cells.slice(24, 24 + Math.min(level - 1, 3));
-  const extraZombie = Math.min(level - 1, 30);
+  const extraZombie = Math.min(level, 30);
   zombies = cells.slice(34, 34 + extraZombie);
   shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
   health = 5;
