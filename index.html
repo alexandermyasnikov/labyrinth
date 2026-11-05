@@ -302,6 +302,25 @@ function reachable(){
   return mark;
 }
 
+// Гарантирует, что течение реки непрерывно: между соседними клетками реки нет стен.
+function ensureRiverFlow(){
+  function isRiver(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true; return false; }
+  function open(r1,c1,r2,c2){
+    const d0 = nd(r2-r1, c2-c1);
+    wall[r1][c1][d0]=false;
+    wall[r2][c2][d0^1]=false;
+  }
+  for(const R of rivers){
+    for(let i=1;i<R.cells.length;i++){
+      // между i-1 и i открываем проход
+      open(R.cells[i-1][0],R.cells[i-1][1],R.cells[i][0],R.cells[i][1]);
+      // между речной клеткой и устьем
+    }
+    // устье обязательно проходимо из предпоследней
+    // (cells[-1] это mouth; открываем связь mouth ↔ neighbours уже в isRiver/ensureRiverExit)
+  }
+}
+
 // Гарантирует, что из устья каждой реки есть открытый выход в соседнюю не-речную клетку.
 function ensureRiverExit(){
   function isRiver(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true; return false; }
@@ -367,6 +386,7 @@ function init(){
   wall = genWalls();
   ensureConnected();
   rivers = genRivers();
+  ensureRiverFlow();
   ensureRiverExit();
   // клетки рек исключаем из пула для всех объектов, чтобы избежать пересечений
   const riverSet = new Set(rivers.flatMap(R=>R.cells.map(([a,b])=>a+','+b)));
