@@ -86,7 +86,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>🔫 стрелок</span>
+    <span>🌊 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -210,7 +210,7 @@ function activeTarget(){
 let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
-    visGrid = [];
+    visGrid = [], shooterAim = new Set();
 const LEVEL_TIME = 300; // секунд на уровень (5 минут)
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
@@ -291,6 +291,7 @@ function init(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  shooterAim.clear();
   wall = genWalls();
   ensureConnected();
   const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
@@ -527,21 +528,32 @@ function zombieTurn(){
   }
 }
 
-// Стрелок: ходит по карте, если видит игрока на дистанции ≤3 — стреляет (урон −1).
+// Стрелок: замечает игрока на дистанции ≤3 → целится (🎯) → стреляет.
 function shooterTurn(){
   if(over) return;
   for(const s of shooters){
     if(over) break;
     const [sr,sc]=s;
+    const key = sr+','+sc;
     const dist = Math.abs(sr-player[0])+Math.abs(sc-player[1]);
     if(dist <= 3 && visGrid[sr][sc]){
-      sfx('shoot');
-      health--; msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
-      if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
-      if(health<=0) endLose();
-      continue; // в этот такт только стреляет, не ходит
+      if(shooterAim.has(key)){
+        // уже целился в прошлый такт — теперь стреляем
+        sfx('shoot');
+        health--; msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
+        if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+        if(health<=0) endLose();
+        shooterAim.delete(key);
+      } else {
+        // впервые заметил — целится, звук прицеливания
+        sfx('aim');
+        shooterAim.add(key);
+      }
+      continue;
     }
-    // иначе блуждает случайно по проходам
+    // потерял из виду или слишком далеко — сбрасываем прицеливание
+    if(shooterAim.has(key)) shooterAim.delete(key);
+    // блуждает случайно по проходам
     const ops=[];
     for(let d=0;d<4;d++){ if(!wall[sr][sc][d]){ const nr=sr+DIRS[d][0], nc=sc+DIRS[d][1]; ops.push([nr,nc]); } }
     if(!ops.length) continue;
@@ -600,6 +612,7 @@ function endWin(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  shooterAim.clear();
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
     'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -616,6 +629,7 @@ function endLose(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  shooterAim.clear();
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
     '<br>Уровень сброшен до 1');
@@ -630,6 +644,7 @@ function endTimeout(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  shooterAim.clear();
   carrying = false; // клад при проигрыше не переносится
   level = 1;
   msg('⏰ Время вышло!');
@@ -713,7 +728,7 @@ function render(){
   }
   // стрелки (только если видны)
   for(const s of shooters){
-    if(visible(s[0],s[1])) drawEmoji('🔫', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
+    if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🎯' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
   }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
