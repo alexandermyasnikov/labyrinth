@@ -735,6 +735,13 @@ function render(){
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
   glow.addColorStop(0,'rgba(255,209,102,.5)'); glow.addColorStop(1,'rgba(255,209,102,0)');
   ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(C+CS/2,C+CS/2,26,0,7); ctx.fill();
+  // метка прицеливания: если хоть один стрелок целится в игрока, мигает красный маркер
+  if(shooterAim.size){
+    const blink = (Date.now()/400)%2 < 1;
+    ctx.strokeStyle = blink ? '#e63946' : '#ffd166';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(C+CS/2, C+CS/2, CS/2+4, 0, 7); ctx.stroke();
+  }
   drawEmoji('🧙', C + CS/2, C + CS/2, 50);
   // пульс-подсказка направления к цели раз в 12 ходов
   if (moves % 12 === 0){
