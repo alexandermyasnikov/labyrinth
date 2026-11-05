@@ -824,6 +824,14 @@ function render(){
     ctx.strokeStyle = blink ? '#e63946' : '#ffd166';
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(C+CS/2, C+CS/2, CS/2+4, 0, 7); ctx.stroke();
+    // стрелки направления: показывают, откуда целится каждый охотник
+    ctx.font = '20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const s of shooters){
+      if(!shooterAim.has(s[0]+','+s[1]) || !visible(s[0],s[1])) continue;
+      const dr = Math.sign(s[0]-player[0]), dc = Math.sign(s[1]-player[1]); // куда от игрока смотрит охотник (сторона атаки)
+      const off = CS/2+14;
+      drawEmoji(dc<0?'⬅':dc>0?'➡':dr<0?'⬆':'⬇', C+CS/2 + dc*off, C+CS/2 + dr*off, 20);
+    }
   }
   drawEmoji('🧙', C + CS/2, C + CS/2, 50);
   // пульс-подсказка направления к цели раз в 12 ходов
