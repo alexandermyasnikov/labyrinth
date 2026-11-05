@@ -217,10 +217,14 @@ let camR = 0, camC = 0; // фракционное смещение камеры 
 let moving = false;     // идёт ли анимация
 let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
 let animFrom = null;    // логическая клетка-старт визуальной анимации
+let hurtUntil = 0;      // временной таймстамп конца красной вспышки при уроне
 let explored = []; // карта-память: разведанные клетки
 
 function msg(s){ statusEl.textContent = s; }
 function info(s){ logEl.textContent = s; }
+
+// Урон: триггерит красную вспышку + HUD-обновление. health-- вызывается отдельно.
+function hurt(){ hurtUntil = Date.now() + 350; updateHUD(); }
 
 // ========== Генерация лабиринта ==========
 // wall[r][c][d] = стена на север/юг/запад/восток. Края всегда стена. Связность гарантирована.
@@ -459,13 +463,14 @@ function onEnter(cell){
     if(rand(2)===0){
       sfx('bear');
       health--;
+      hurt();
       msg('Ловушка! Ты ранен. Здоровье: '+health);
       if(carrying){ carrying=false; msg('Клад остался на месте ранения.'); saveGame(); }
       if(health<=0) endLose();
     } else msg('Осторожно — здесь была ловушка, но ты не сработал её.');
     return;
   }
-  if(inList(cell, fire)){ sfx('bear'); health--; msg('Огненная ловушка! Ты обожжён. Здоровье: '+health); if(health<=0) endLose(); return; }
+  if(inList(cell, fire)){ sfx('bear'); health--; hurt(); msg('Огненная ловушка! Ты обожжён. Здоровье: '+health); if(health<=0) endLose(); return; }
   if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg('Ключ взят! Теперь можно открыть дверь к выходу.'); keyPos=null; saveGame(); }
   if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg('Ты взял сундук! Отнеси его к выходу (🚩).'); saveGame(); }
   if(cell[0]===exitPos[0]&&cell[1]===exitPos[1]){
@@ -499,7 +504,7 @@ function bearTurn(){
     bear[0]=mv[0]; bear[1]=mv[1];
     if(bear[0]===player[0]&&bear[1]===player[1]){
       sfx('bear');
-      health--; msg('Медведь настиг тебя! Ранен. Здоровье: '+health);
+      health--; hurt(); msg('Медведь настиг тебя! Ранен. Здоровье: '+health);
       if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
       if(health<=0) endLose();
     }
@@ -522,7 +527,7 @@ function zombieTurn(){
     z[0]=best[0]; z[1]=best[1];
     if(Math.abs(z[0]-player[0])+Math.abs(z[1]-player[1]) === 1){
       sfx('bear');
-      health--; msg('Зомби укусил! Здоровье: '+health);
+      health--; hurt(); msg('Зомби укусил! Здоровье: '+health);
       if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
       if(health<=0) endLose();
     }
@@ -542,7 +547,7 @@ function shooterTurn(){
         // уже целится в прошлый такт — повторяющийся сигнал опасности, затем выстрел
         sfx('danger');
         sfx('shoot');
-        health--; msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
+        health--; hurt(); msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
         if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
         if(health<=0) endLose();
         shooterAim.delete(key);
@@ -759,6 +764,14 @@ function render(){
     ctx.globalAlpha = 0.85;
     ctx.fillText(dx===0&&dy===0 ? '🏆' : (dy<0?'⬆':dy>0?'⬇':dx<0?'⬅':'➡'), C + CS/2 - 120*dx, C + CS/2 - 120*dy);
     ctx.restore();
+  }
+  // красная виньетка при уроне
+  const now = Date.now();
+  if(hurtUntil > now){
+    const a = (hurtUntil - now)/350; // затухание вспышки
+    const g = ctx.createRadialGradient(C,C,N*0.5, C,C,N*0.75);
+    g.addColorStop(0,'rgba(230,57,70,0)'); g.addColorStop(1,'rgba(230,57,70,'+(0.5*a).toFixed(2)+')');
+    ctx.fillStyle=g; ctx.fillRect(0,0,N,N);
   }
 }
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
