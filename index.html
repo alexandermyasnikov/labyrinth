@@ -660,7 +660,7 @@ function drawEmoji(sym, cx, cy, size){
 }
 
 function cellSymbol(r,c){
-  if(r===keyPos[0]&&c===keyPos[1]) return '🗝️';
+  if(keyPos&&r===keyPos[0]&&c===keyPos[1]) return '🗝️';
   if(r===chest[0]&&c===chest[1]) return '💰';
   if(r===exitPos[0]&&c===exitPos[1]) return '🚩';
   if(r===hospital[0]&&c===hospital[1]) return '💉';
