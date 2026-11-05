@@ -208,7 +208,8 @@ function activeTarget(){
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
-    timeLeft = 0, timerId = null, bearTimerId = null;
+    timeLeft = 0, timerId = null, bearTimerId = null,
+    visGrid = [];
 const LEVEL_TIME = 90; // секунд на уровень
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
@@ -316,6 +317,7 @@ function init(){
   timeLeft = LEVEL_TIME;
   camR=0; camC=0; moving=false; animFrom=null;
   explored = Array.from({length:H},()=>Array(W).fill(false));
+  computeVisibility();
   markExplored();
   bestLine();
   info('Уровень ' + level + '. У тебя нет карты. Ходи с помощью стрелок, изучай лабиринт.');
@@ -366,14 +368,30 @@ function inList(cell, list){ // cell присутствует в list?
   for(const [r,c] of list) if(r===cell[0] && c===cell[1]) return true;
   return false;
 }
-function visible(r,c){ // туман войны: видна только клетка в радиусе 1 от игрока
-  return Math.abs(r-player[0])<=1 && Math.abs(c-player[1])<=1;
+// Видимость по проходам (не сквозь стены), радиус 3 от игрока.
+function computeVisibility(){
+  visGrid = Array.from({length:H},()=>Array(W).fill(false));
+  const st=[[player[0],player[1],0]];
+  visGrid[player[0]][player[1]]=true;
+  while(st.length){
+    const [r,c,d]=st.pop();
+    if(d>=3) continue;
+    for(let dd=0;dd<4;dd++){
+      if(wall[r][c][dd]) continue;
+      const nr=r+DIRS[dd][0], nc=c+DIRS[dd][1];
+      if(nr<0||nr>=H||nc<0||nc>=W||visGrid[nr][nc]) continue;
+      visGrid[nr][nc]=true;
+      st.push([nr,nc,d+1]);
+    }
+  }
 }
-// Разведанная окрестность радиуса 1 вокруг игрока (история посещений, не туман).
+function visible(r,c){ // видна ли клетка (в радиусе 3, не сквозь стены)
+  return visGrid[r][c];
+}
+// Разведанная окрестность вокруг игрока (история посещений).
 function markExplored(){
-  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
-    const r=player[0]+dr, c=player[1]+dc;
-    if(r>=0&&r<H&&c>=0&&c<W) explored[r][c]=true;
+  for(let r=0;r<H;r++) for(let c=0;c<W;c++){
+    if(visGrid[r][c]) explored[r][c]=true;
   }
 }
 // Текущая draw-позиция (логическая клетка при простое, lerp при анимации) — общая для render и cellFromMouse.
@@ -400,6 +418,7 @@ function tryMove(dr,dc){
   animFrom = [r,c];
   camR=camC=0; moving=true;
   player = [r+dr, c+dc];
+  computeVisibility();
   markExplored();
   sfx('move');
   onEnter(player);
