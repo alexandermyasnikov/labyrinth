@@ -211,7 +211,7 @@ let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospit
     trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
     visGrid = [];
-const LEVEL_TIME = 90; // секунд на уровень
+const LEVEL_TIME = 300; // секунд на уровень (5 минут)
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
 let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
