@@ -136,6 +136,7 @@ function sfx(type){
       hole:   [160,'sine',   .18,.25],
       key:    [700,'sine',   .15,.22],
       shoot:  [400,'square', .12,.25],
+      danger: [300,'sawtooth',.28,.30],
       win:    [880,'sine',   .35,.35],
       lose:   [90, 'sawtooth',.4,.40],
       aim:    [500,'sine',   .08,.15],
@@ -538,15 +539,16 @@ function shooterTurn(){
     const dist = Math.abs(sr-player[0])+Math.abs(sc-player[1]);
     if(dist <= 3 && visGrid[sr][sc]){
       if(shooterAim.has(key)){
-        // уже целился в прошлый такт — теперь стреляем
+        // уже целится в прошлый такт — повторяющийся сигнал опасности, затем выстрел
+        sfx('danger');
         sfx('shoot');
         health--; msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
         if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
         if(health<=0) endLose();
         shooterAim.delete(key);
       } else {
-        // впервые заметил — целится, звук прицеливания
-        sfx('aim');
+        // впервые заметил — звук прицеливания/опасности
+        sfx('danger');
         shooterAim.add(key);
       }
       continue;
