@@ -213,7 +213,7 @@ let camR = 0, camC = 0; // фракционное смещение камеры 
 let moving = false;     // идёт ли анимация
 let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
 let animFrom = null;    // логическая клетка-старт визуальной анимации
-let explored = [], markers = {}; // карта-память: разведанные клетки + ручные маркеры ("r,c" => 'q'/'x')
+let explored = []; // карта-память: разведанные клетки
 
 function msg(s){ statusEl.textContent = s; }
 function info(s){ logEl.textContent = s; }
@@ -313,7 +313,6 @@ function init(){
   timeLeft = LEVEL_TIME;
   camR=0; camC=0; moving=false; animFrom=null;
   explored = Array.from({length:H},()=>Array(W).fill(false));
-  markers = {};
   markExplored();
   bestLine();
   info('Уровень ' + level + '. У тебя нет карты. Ходи с помощью стрелок, изучай лабиринт.');
@@ -329,7 +328,7 @@ function init(){
 function saveGame(){
   const state = {
     player, chest, exitPos, river, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, markers
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -345,7 +344,7 @@ function loadGame(){
   health = data.health; bombs = data.bombs; carrying = data.carrying;
   carryingKey = data.carryingKey; keyPos = data.keyPos;
   level = data.level; moves = data.moves; timeLeft = data.timeLeft; over = data.over;
-  explored = data.explored; markers = data.markers;
+  explored = data.explored;
   markExplored();
   render(); updateHUD();
   return true;
@@ -379,13 +378,6 @@ function drawPos(){
     return [animFrom[0] + (pr-animFrom[0])*e, animFrom[1] + (pc-animFrom[1])*e];
   }
   return [pr, pc];
-}
-function cycleMarker(cell){
-  const k = cell[0]+','+cell[1];
-  const cur = markers[k];
-  markers[k] = cur ? (cur==='q' ? 'x' : undefined) : 'q'; // нет -> 'q' -> 'x' -> нет
-  if(markers[k]===undefined) delete markers[k];
-  sfx('aim');
 }
 function bestLine(){
   const b = loadBest();
@@ -555,15 +547,13 @@ function render(){
   const sx = r => C + (r - drawR) * CS; // экранная строка
   const sc = c => C + (c - drawC) * CS; // экранный столбец
 
-  // Слой карты-памяти: разведанные клетки вне активной (видимой) зоны, затемнённые, с маркерами.
+  // Слой карты-памяти: разведанные клетки вне активной (видимой) зоны, затемнённые.
   for(let r=0;r<H;r++) for(let c=0;c<W;c++){
     if(!explored[r][c] || visible(r,c)) continue;
     const x=sc(c), y=sx(r);
     if(x<-CS||x>N||y<-CS||y>N) continue;
     ctx.fillStyle='rgba(38,42,52,.35)'; ctx.fillRect(x,y,CS,CS);
     ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1; ctx.strokeRect(x,y,CS,CS);
-    const m = markers[r+','+c];
-    if(m) drawEmoji(m==='q'?'❔':'❌', x+CS/2, y+CS/2, 24);
   }
 
   // замкнутые по стенам столбы: клетки + стены, только если видны
@@ -586,9 +576,6 @@ function render(){
     ctx.strokeRect(x,y,CS,CS);
     // маркер (центрируем по клетке)
     if(sym) drawEmoji(sym, x+CS/2, y+CS/2, 30);
-    // маленький маркер в углу, если игрок поставил
-    const m = markers[r+','+c];
-    if(m) drawEmoji(m==='q'?'❔':'❌', x+CS-12, y+12, 14);
     // стены (помещаем поверх подложки, но под медведем/игроком)
   }
   // стены
@@ -693,7 +680,6 @@ const KEYMAP = {
 document.addEventListener('keydown', e=>{
   if(e.code==='KeyR'){ clearSave(); init(); render(); return; }
   if(e.code==='KeyH'){ toggleHelp(); return; }
-  if(e.code==='KeyM'){ if(over) return; cycleMarker(player); render(); return; }
   const mv = KEYMAP[e.code];
   if(e.code==='KeyB'){
     if(over) return;
@@ -708,18 +694,6 @@ document.addEventListener('keydown', e=>{
 });
 document.getElementById('restart').addEventListener('click', ()=>{ init(); render(); });
 ovReplay.addEventListener('click', ()=>{ init(); render(); });
-cv.addEventListener('click', e=>{
-  if(over) return;
-  const rect = cv.getBoundingClientRect();
-  const mx = (e.clientX-rect.left)*N/rect.width;
-  const my = (e.clientY-rect.top)*N/rect.height;
-  const dp = drawPos();
-  const r = Math.round(dp[0] + (my-C)/CS);
-  const c = Math.round(dp[1] + (mx-C)/CS);
-  if(r<0||r>=H||c<0||c>=W) return;
-  if(!explored[r][c]){ info('Сначала разведай эту клетку.'); return; }
-  cycleMarker([r,c]); render();
-});
 
 init();
 requestAnimationFrame(frame);
