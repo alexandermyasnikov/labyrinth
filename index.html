@@ -88,7 +88,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌀 река</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
+    <span>🌀 озеро</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -97,7 +97,7 @@
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 река несёт по 1-2 клетки каждые 2с · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
+      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -216,7 +216,7 @@ function activeTarget(){
 }
 
 // ========== Состояние ==========
-let wall, player, chest, exitPos, keyPos, river=[], rivers=[], holes=[], arsenal=[], hospital,
+let wall, player, chest, exitPos, keyPos, river=[], lakes=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null,
     visGrid = [], shooterAim = new Set();
@@ -302,75 +302,42 @@ function reachable(){
   return mark;
 }
 
-// Гарантирует, что течение реки непрерывно: между соседними клетками реки нет стен.
-function ensureRiverFlow(){
-  function isRiver(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true; return false; }
-  function open(r1,c1,r2,c2){
-    const d0 = nd(r2-r1, c2-c1);
-    wall[r1][c1][d0]=false;
-    wall[r2][c2][d0^1]=false;
-  }
-  for(const R of rivers){
-    for(let i=1;i<R.cells.length;i++){
-      // между i-1 и i открываем проход
-      open(R.cells[i-1][0],R.cells[i-1][1],R.cells[i][0],R.cells[i][1]);
-      // между речной клеткой и устьем
-    }
-    // устье обязательно проходимо из предпоследней
-    // (cells[-1] это mouth; открываем связь mouth ↔ neighbours уже в isRiver/ensureRiverExit)
-  }
-}
-
-// Гарантирует, что из устья каждой реки есть открытый выход в соседнюю не-речную клетку.
-function ensureRiverExit(){
-  function isRiver(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true; return false; }
-  for(const R of rivers){
-    const [mr,mc]=R.mouth;
-    for(let i=0;i<4;i++){
-      const d = (rand(4)+i)%4, nr=mr+DIRS[d][0], nc=mc+DIRS[d][1];
-      if(nr<0||nr>=H||nc<0||nc>=W||isRiver(nr,nc)) continue;
-      // открываем проход устье ↔ сосед
-      wall[mr][mc][d]=false;
-      wall[nr][nc][d^1]=false;
-      break;
-    }
-  }
-}
-
 // ========== Инициализация ==========
-// Строит 2-3 прямые реки (горизонтальные/вертикальные) длиной 6-10 клеток.
-// Устье каждой реки — последняя клетка прямой. Реки не пересекаются между собой.
-// Для последующей связности используется уже построенный лабиринт (стены).
-function genRivers(){
+// Генерирует 2-3 озера произвольной (случайной) формы.
+// Каждое озеро — связный кластер из 1-10 соседних клеток (линия, квадрат, пятно).
+// direction — главное направление течения озера (одно из 4 ортогональных).
+function genLakes(){
   const used = Array.from({length:H},()=>Array(W).fill(false));
-  for(const c of river) used[c[0]][c[1]]=true;
   const res = [];
-  const nRivers = 2 + rand(2); // 2-3
-  for(let k=0;k<nRivers*20;k++){
-    if(res.length>=nRivers) break;
-    const horiz = rand(2)===0;
-    const len = 6 + rand(5); // 6..10
-    // выбираем старт с запасом в направлении движения
-    let r, c;
-    if(horiz){
-      r = rand(H);
-      c = rand(W - len + 1); // вправо: хватает len клеток
-    } else {
-      c = rand(W);
-      r = rand(H - len + 1); // вниз: хватает len клеток
+  const nLakes = 2 + rand(2); // 2-3
+  let attempts = 0;
+  while(res.length < nLakes && attempts < 200){
+    attempts++;
+    const size = 1 + rand(10); // 1..10 клеток
+    // стартовая клетка
+    const sr = rand(H), sc = rand(W);
+    if(used[sr][sc]) continue;
+    const cluster = [[sr,sc]];
+    used[sr][sc] = true;
+    // случайный рост кластера связными клетками
+    let grown = 1;
+    while(grown < size){
+      // выбрать случайную уже занятую клетку и случайного соседа
+      const pool = cluster[rand(cluster.length)];
+      const dd = DIRS[rand(4)];
+      const nr = pool[0]+dd[0], nc = pool[1]+dd[1];
+      if(nr<0||nr>=H||nc<0||nc>=W||used[nr][nc]) continue;
+      used[nr][nc]=true;
+      cluster.push([nr,nc]);
+      grown++;
     }
-    const cells=[];
-    let ok=true;
-    for(let i=0;i<len;i++){
-      const nr = r + (horiz?0:i), nc = c + (horiz?i:0);
-      if(used[nr][nc]){ ok=false; break; }
-      cells.push([nr,nc]);
-    }
-    if(!ok) continue;
-    for(const [cr,cc] of cells) used[cr][cc]=true;
-    res.push({ cells, mouth: cells[cells.length-1].slice() });
+    // главное направление озера
+    const direction = DIRS[rand(4)].slice();
+    res.push({ cells: cluster.slice(), direction });
   }
-  if(!res.length) res.push({ cells:[[1,1],[1,2],[1,3],[1,4],[1,5],[1,6]], mouth:[1,6] });
+  if(!res.length){
+    res.push({ cells:[[1,1]], direction:[0,1] }); // фолбэк: одно 1-клеточное озеро
+  }
   return res;
 }
 function init(){
@@ -386,12 +353,10 @@ function init(){
   dashFlash = null;
   wall = genWalls();
   ensureConnected();
-  rivers = genRivers();
-  ensureRiverFlow();
-  ensureRiverExit();
-  // клетки рек исключаем из пула для всех объектов, чтобы избежать пересечений
-  const riverSet = new Set(rivers.flatMap(R=>R.cells.map(([a,b])=>a+','+b)));
-  const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(!riverSet.has(r+','+c)) cells.push([r,c]);
+  lakes = genLakes();
+  // клетки озер исключаем из пула для всех объектов, чтобы избежать пересечений
+  const lakeSet = new Set(lakes.flatMap(R=>R.cells.map(([a,b])=>a+','+b)));
+  const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(!lakeSet.has(r+','+c)) cells.push([r,c]);
   shuffle(cells);
   player = cells[0];
   exitPos = cells[1];
@@ -449,7 +414,7 @@ function init(){
 // ========== Сохранение партии (localStorage) ==========
 function saveGame(){
   const state = {
-    player, chest, exitPos, river, rivers, holes, arsenal, hospital, trap, bears,
+    player, chest, exitPos, river, lakes, holes, arsenal, hospital, trap, bears,
     health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
@@ -461,7 +426,7 @@ function loadGame(){
   if(!data) return false;
   init(); // стены генерируются заново, остальное переопределяется сохранением
   player = data.player; chest = data.chest; exitPos = data.exitPos;
-  river = data.river; rivers = data.rivers || (data.river && data.river.length ? [{cells:data.river, mouth:data.river[0].slice()}] : []);
+  river = data.river; lakes = data.lakes || (data.lakes ? data.lakes : []);
   holes = data.holes; arsenal = data.arsenal;
   hospital = data.hospital; trap = data.trap; bears = data.bears;
   health = data.health; bombs = data.bombs; carrying = data.carrying;
@@ -562,35 +527,48 @@ function dash(dr,dc){
   sfx('step');
   msg('Рывок!'); saveGame(); render();
 }
-// Река: нахождение реки, содержащей клетку, и направление сноса к устью.
-function riverOf(r,c){ for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return R; return null; }
-function isMouth(r,c,R){ return R.mouth[0]===r && R.mouth[1]===c; }
-function inRiverCell(cell){
-  const [r,c]=cell;
-  for(const R of rivers) for(const [cr,cc] of R.cells) if(cr===r&&cc===c) return true;
-  return false;
-}
-// Постепенный снос: возвращает позицию на 1-2 клетки ближе к устью (вдоль прямой реки).
-// Каждый ход река несёт игрока на 1-2 клетки; скорость чуть выше обычного хода.
-function carryRiver(r,c){
-  const R = riverOf(r,c);
-  if(!R || isMouth(r,c,R)) return null; // не река или уже в устье — не несёт
-  const [mr,mc] = R.mouth;
-  const sr = Math.sign(mr-r), sc = Math.sign(mc-c); // шаг к устью
-  let nr=r+sr, nc=c+sc;
-  let steps = 1;
-  if(rand(2)===0 && !(nr===mr&&nc===mc)){ // сносим 2 клетки, если не пришли в устье
-    nr+=sr; nc+=sc; steps=2;
+// ===== Озёра: произвольной формы, внутри «крутит» течением =====
+function lakeOf(r,c){ for(const L of lakes) for(const [cr,cc] of L.cells) if(cr===r&&cc===c) return L; return null; }
+function inLakeCell(cell){ const [r,c]=cell; return lakeOf(r,c)!==null; }
+// Текущее смещение внутри озера: с вероятностью 75% в главном направлении,
+// иначе случайно вбок. У края озера течение может выбросить игрока на сушу.
+function lakeFlow(r,c){
+  const L = lakeOf(r,c); if(!L) return null;
+  const [dr,dc] = L.direction;
+  const isLakePos = (rr,cc)=>lakeOf(rr,cc)!==null;
+  const openTo = (rr,cc)=>{ // проходимый проход (r,c)->(rr,cc) без стены
+    if(rr<0||rr>=H||cc<0||cc>=W) return false;
+    const d = nd(rr-r, cc-c);
+    return !wall[r][c][d];
+  };
+  // 75% идём в главном направлении
+  if(rand(4)<3){
+    const gr=r+dr, gc=c+dc;
+    if(isLakePos(gr,gc)) return [gr,gc];            // внутри озера — плывём по течению
+    if(openTo(gr,gc)) return [gr,gc];               // у края — выбрасывает на сушу
+    // главное в стену — fall-through к случайному кручению
   }
-  return [nr,nc];
+  // 25% (или главное упёрлось в стену) — крутим случайным соседом внутри озера
+  const inLakeOps=[];
+  for(let i=0;i<4;i++){
+    const n=[r+DIRS[i][0], c+DIRS[i][1]];
+    if(isLakePos(n[0],n[1]) && openTo(n[0],n[1])) inLakeOps.push(n);
+  }
+  if(inLakeOps.length) return inLakeOps[rand(inLakeOps.length)];
+  // нет соседей в озере (1-клеточное) и главное в стену — пробуем выбросить на любую открытую сушу
+  for(let i=0;i<4;i++){
+    const n=[r+DIRS[i][0], c+DIRS[i][1]];
+    if(!isLakePos(n[0],n[1]) && openTo(n[0],n[1])) return n;
+  }
+  return null; // полностью заперт (озеро из 1 клетки с закрытыми проходами) — не несём
 }
-// Автоснос течением: каждые ~2с двигает игрока по реке к устью, пока он на реке.
-function riverTick(){
+// Автоснос каждые ~2с: пока игрок в озере, его крутит течением.
+function lakeTick(){
   if(over){ if(riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; } return; }
   const [pr,pc]=player;
-  const mv = carryRiver(pr,pc);
+  const mv = lakeFlow(pr,pc);
   if(!mv){
-    // на устье или вне реки — течение больше не несёт
+    // игрок вне озера или устья нет — течение больше не крутит
     if(riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; }
     return;
   }
@@ -598,25 +576,25 @@ function riverTick(){
   player = mv;
   sfx('river');
   markExplored();
-  msg('Река несёт тебя вниз по течению.');
+  msg('Течение озера несёт тебя.');
   saveGame(); render();
 }
 
 function onEnter(cell){
   const [r,c]=cell;
-  if(inRiverCell(cell)){
-    // первый снос при попадании в реку
-    const mv = carryRiver(r,c);
+  if(inLakeCell(cell)){
+    // первое смещение при попадании в озеро
+    const mv = lakeFlow(r,c);
     if(mv){
       animFrom=[r,c]; camR=camC=0; moving=true;
       player = mv;
       sfx('river');
       markExplored();
-      msg('Река несёт тебя вниз по течению.');
+      msg('Течение озера несёт тебя.');
     }
-    // запускаем автоснос каждые 2с, пока игрок на реке (не устье)
+    // запускаем автоснос каждые 2с, пока игрок в озере
     if(!riverTimerId){
-      riverTimerId = setInterval(riverTick, 2000);
+      riverTimerId = setInterval(lakeTick, 2000);
     }
     saveGame(); render();
     return;
@@ -1029,8 +1007,7 @@ function cellSymbol(r,c){
   if(inList([r,c],fire)) return '🔥';
   if(r===hospital[0]&&c===hospital[1]) return '💉';
   if(inList([r,c],arsenal)) return '📦';
-  for(const R of rivers) if(isMouth(r,c,R)) return '🌀'; // устье реки
-  if(inRiverCell([r,c])) return '🌀';
+  if(inLakeCell([r,c])) return '🌀';
   if(inList([r,c],holes)) return '🕳';
   if(inList([r,c],trap)) return '⚠️';
   return '';
