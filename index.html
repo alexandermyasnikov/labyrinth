@@ -79,6 +79,7 @@
     <span>Клад: <b id="hud-chest">✖</b></span>
     <span>Ключ: <b id="hud-key">✖</b></span>
     <span>Уровень: <b id="hud-level">1</b></span>
+    <span>Ходы: <b id="hud-moves">0</b></span>
     <span>Компас: <b id="hud-compass">?</b></span>
     <span>Время: <b id="hud-time">--</b></span>
   </div>
@@ -160,6 +161,7 @@ const hudBombs = document.getElementById('hud-bombs');
 const hudChest = document.getElementById('hud-chest');
 const hudKey = document.getElementById('hud-key');
 const hudLevel = document.getElementById('hud-level');
+const hudMoves = document.getElementById('hud-moves');
 const hudCompass = document.getElementById('hud-compass');
 const hudTime = document.getElementById('hud-time');
 const overlay = document.getElementById('overlay');
@@ -189,6 +191,7 @@ function updateHUD(){
   hudChest.textContent = carrying ? '✔' : '✖';
   hudKey.textContent = carryingKey ? '✔' : '✖';
   hudLevel.textContent = level;
+  hudMoves.textContent = moves;
   const [ar, ac] = activeTarget();
   const [pr, pc] = player;
   let dir = '';
