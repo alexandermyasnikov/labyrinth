@@ -97,7 +97,7 @@
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 река несёт на 1-2 клетки вниз по течению · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
+      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 река несёт по 1-2 клетки каждые 2с · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -218,7 +218,7 @@ function activeTarget(){
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], rivers=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
-    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
+    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null,
     visGrid = [], shooterAim = new Set();
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
 let boom = null; // взрыв стены: {r,c, t0}
@@ -379,6 +379,7 @@ function init(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   shots = [];
   boom = null;
@@ -583,19 +584,41 @@ function carryRiver(r,c){
   }
   return [nr,nc];
 }
+// Автоснос течением: каждые ~2с двигает игрока по реке к устью, пока он на реке.
+function riverTick(){
+  if(over){ if(riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; } return; }
+  const [pr,pc]=player;
+  const mv = carryRiver(pr,pc);
+  if(!mv){
+    // на устье или вне реки — течение больше не несёт
+    if(riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; }
+    return;
+  }
+  animFrom=[pr,pc]; camR=camC=0; moving=true;
+  player = mv;
+  sfx('river');
+  markExplored();
+  msg('Река несёт тебя вниз по течению.');
+  saveGame(); render();
+}
 
 function onEnter(cell){
   const [r,c]=cell;
   if(inRiverCell(cell)){
-    const mv = carryRiver(r,c); // постепенный снос на 1-2 клетки к устью
+    // первый снос при попадании в реку
+    const mv = carryRiver(r,c);
     if(mv){
-      sfx('river');
+      animFrom=[r,c]; camR=camC=0; moving=true;
       player = mv;
-      // если снова на реке (не устье) и пройдено меньше 2 клеток — не зацикливаем; снесём следующим ходом
+      sfx('river');
       markExplored();
-      camR=camC=1; moving=false;
       msg('Река несёт тебя вниз по течению.');
     }
+    // запускаем автоснос каждые 2с, пока игрок на реке (не устье)
+    if(!riverTimerId){
+      riverTimerId = setInterval(riverTick, 2000);
+    }
+    saveGame(); render();
     return;
   }
   if(inList(cell, holes)){ sfx('hole'); msg('Дырка — провал! Ты выходишь из другой дырки.'); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
@@ -767,6 +790,7 @@ function endWin(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
@@ -784,6 +808,7 @@ function endLose(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -799,6 +824,7 @@ function endTimeout(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   carrying = false; // клад при проигрыше не переносится
   level = 1;
