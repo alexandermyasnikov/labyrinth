@@ -220,6 +220,7 @@ let wall, player, chest, exitPos, keyPos, river=[], holes=[], arsenal=[], hospit
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null,
     visGrid = [], shooterAim = new Set();
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
+let boom = null; // взрыв стены: {r,c, t0}
 const LEVEL_TIME = 300; // секунд на уровень (5 минут)
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
@@ -308,6 +309,7 @@ function init(){
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   shooterAim.clear();
   shots = [];
+  boom = null;
   wall = genWalls();
   ensureConnected();
   const cells=[]; for(let r=0;r<H;r++) for(let c=0;c<W;c++) cells.push([r,c]);
@@ -620,6 +622,7 @@ function bomb(dr,dc){
     bombs--;
     sfx('bomb');
     msg('Бум! Стена ' + DN[d] + ' взорвана. Бомб осталось: '+bombs);
+    boom = { r: target[0], c: target[1], t0: Date.now() };
     saveGame();
     computeVisibility(); // стена ломается — пересчитываем зону видимости
   } else msg('Здесь нет стены.');
@@ -784,6 +787,16 @@ function render(){
     const py = sx(b.x1 + (b.x2-b.x1)*t) + CS/2;
     ctx.fillStyle = '#ffd166';
     ctx.beginPath(); ctx.arc(px, py, 4, 0, 7); ctx.fill();
+  }
+  // анимация взрыва стены (~0.3с расширяющееся кольцо)
+  if(boom){
+    const bt = (nowS - boom.t0)/300;
+    if(bt < 1){
+      const bx = sc(boom.c)+CS/2, by = sx(boom.r)+CS/2;
+      ctx.strokeStyle = 'rgba(255,159,67,'+(1-bt).toFixed(2)+')';
+      ctx.lineWidth = 6*(1-bt);
+      ctx.beginPath(); ctx.arc(bx, by, CS*0.4 + bt*CS*0.9, 0, 7); ctx.stroke();
+    } else boom = null;
   }
   // игрок — всегда в центре с мягким свечением
   const glow = ctx.createRadialGradient(C+CS/2, C+CS/2, 4, C+CS/2, C+CS/2, 28);
