@@ -277,7 +277,8 @@ const I18N = {
     record:'Record: level <b>', record2:'</b>', bestL1:' · best time L1 <b>',
   }
 };
-let lang = localStorage.getItem('labyrinth.lang');
+let lang = null;
+try{ lang = localStorage.getItem('labyrinth.lang'); }catch(_){ lang = null; }
 if(!lang || !I18N[lang]) lang = (navigator.language||'').toLowerCase().startsWith('ru') ? 'ru' : 'en';
 lang = (lang==='ru'||lang==='en') ? lang : 'en';
 function t(key){ return I18N[lang][key] ?? I18N.ru[key]; }
@@ -741,6 +742,7 @@ function init(){
   over = false;
   aiming = false;
   paused = false;
+  helpOpen = false; try{ if(helpEl) helpEl.hidden = true; }catch(_){}
   score = 0; combo = 0; comboUntil = 0; tookDamage = false;
   parts = []; shake = 0;
   skipMove = 0;
@@ -806,7 +808,7 @@ function drawPos(){
 // ========== Движение и ходы ==========
 let moveLockUntil = 0; // кулдаун хода: не чаще раза в CFG.MOVE_CD мс
 function tryMove(dr,dc){
-  if(over || paused) return;
+  if(over || paused || helpOpen) return;
   const now = Date.now();
   if(now < moveLockUntil) return; // слишком часто — игнор
   if(skipMove > 0){ // завяз в болоте — пропуск хода, остаток задержки
@@ -841,20 +843,28 @@ function tryMove(dr,dc){
 }
 // Рывок (Shift+направление): прыжок через 1 клетку, обе должны быть проходимыми. Кулдаун 1.5с.
 function dash(dr,dc){
-  if(over || paused) return;
+  if(over || paused || helpOpen) return;
   const now = Date.now();
   if(now < dashUntil){ msg(t('w_dashCd')); return; }
+  if(skipMove > 0){ // болото задерживает и рывок (раньше рывок обходил задержку)
+    skipMove--;
+    msg(t('w_swamp') + skipMove + t('w_swamp2'));
+    render();
+    return;
+  }
   const r=player[0], c=player[1];
   if(wall[r][c][nd(dr,dc)]){ msg(t('w_wall')); sfx('wall'); return; }
   const r2=r+dr*2, c2=c+dc*2;
   if(wall[r+dr][c+dc][nd(dr,dc)]){ msg(t('w_dashWall')); return; }
   // обе клетки на пути свободны
   player=[r2,c2];
-  markExplored(); computeVisibility();
   dashUntil = now + CFG.DASH_CD;
   dashFlash = { r: player[0], c: player[1], t0: now };
   sfx('step');
-  msg(t('w_dash')); render();
+  markExplored(); computeVisibility();
+  msg(t('w_dash'));
+  onEnter(player); // BUG FIX: рывок должен подбирать сундук/ключ, срабатывать ловушками и т.д. (раньше onEnter не вызывался)
+  render();
 }
 // ===== Озёра: произвольной формы, внутри «крутит» течением =====
 function lakeOf(r,c){ for(const L of lakes) for(const [cr,cc] of L.cells) if(cr===r&&cc===c) return L; return null; }
@@ -906,29 +916,14 @@ function lakeTick(){
   sfx('river');
   markExplored();
   msg(t('w_river'));
+  if(!inLakeCell(player) && !inList(player, holes) && !over) cellEffects(player); // BUG FIX: см. onEnter
   render();
 }
 
-function onEnter(cell){
+// Эффекты клетки БЕЗ озера/дырки (лечение/урон/подбор/выход/болото).
+// Вызывается и при входе, и при выбросе течением/дыркой на клетку назначения.
+function cellEffects(cell){
   const [r,c]=cell;
-  if(inLakeCell(cell)){
-    // первое смещение при попадании в озеро
-    const move = lakeFlow(r,c);
-    if(move){
-      animFrom=[r,c]; camR=camC=0; moving=true;
-      player = move;
-      sfx('river');
-      markExplored();
-      msg(t('w_river'));
-    }
-    // запускаем автоснос каждые 2с, пока игрок в озере
-    if(!riverTimerId){
-      riverTimerId = setInterval(lakeTick, CFG.RIVER_MS);
-    }
-    render();
-    return;
-  }
-  if(inList(cell, holes)){ sfx('hole'); msg(t('w_hole')); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
   if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg(t('w_arsenal')); return; }
   if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg(t('w_hospital')); return; }
   if(inList(cell, trap)){
@@ -947,8 +942,36 @@ function onEnter(cell){
     sfx('hole');
     skipMove = SWAMP_SKIPS; // задержка на несколько ходов
     msg(t('w_swamp')+SWAMP_SKIPS+t('w_swamp3'));
-    render();
   }
+}
+function onEnter(cell){
+  const [r,c]=cell;
+  if(inLakeCell(cell)){
+    // первое смещение при попадании в озеро
+    const move = lakeFlow(r,c);
+    if(move){
+      animFrom=[r,c]; camR=camC=0; moving=true;
+      player = move;
+      sfx('river');
+      markExplored();
+      msg(t('w_river'));
+    }
+    // запускаем автоснос каждые 2с, пока игрок в озере
+    if(!riverTimerId){
+      riverTimerId = setInterval(lakeTick, CFG.RIVER_MS);
+    }
+    if(!inLakeCell(player) && !inList(player, holes) && !over) cellEffects(player); // BUG FIX: выбросило на сушу — сработают её эффекты
+    render();
+    return;
+  }
+  if(inList(cell, holes)){
+    sfx('hole'); msg(t('w_hole'));
+    player = nextHole(cell).slice();
+    markExplored(); camR=camC=1; moving=false;
+    if(!inLakeCell(player) && !inList(player, holes) && !over) cellEffects(player); // BUG FIX: эффекты клетки назначения
+    return;
+  }
+  cellEffects(cell);
 }
 function nextHole(cell){
   let i = holes.findIndex(([rr,cc])=>rr===cell[0]&&cc===cell[1]);
@@ -1106,7 +1129,7 @@ function shooterTurn(){
 
 // Бомба взрывает стену в заданном направлении (игрок не двигается).
 function bomb(dr,dc){
-  if(over || paused) return;
+  if(over || paused || helpOpen) return;
   if(bombs<=0){ msg(t('w_noBombs')); return; }
   const r=player[0], c=player[1];
   const d=nd(dr,dc);
@@ -1178,10 +1201,12 @@ function endWin(){
   clearAims();
   const bBest = bestText(loadBest());
   checkAchievements();
+  const achNames = stats.unlocked.map(id => { const a = ACH.find(x=>x.id===id); return a ? a.name() : id; }).join(', ');
   showOverlay(t('winTitle'), '#ffd166',
     t('w_winStats') + moves + t('w_winStats2') + (LEVEL_TIME - timeLeft) + t('secs') +
     t('w_newLevel') + level + t('w_newLevel2') +
     '<br>' + t('hudScore') + ': <b>' + score + '</b>' +
+    (achNames ? '<br>' + t('achUnlock') + achNames : '') +
     (bBest ? '<br>' + bBest : ''));
 }
 function endLose(){
@@ -1473,6 +1498,7 @@ const KEYMAP = {
 document.addEventListener('keydown', e=>{
   if(e.code==='KeyP' || e.code==='Escape'){ togglePause(); return; }
   if(e.code==='KeyR'){ init(); render(); return; }
+  if(paused) return; // в паузе только выход из неё и рестарт
   if(e.code==='KeyH'){ toggleHelp(); return; }
   const dir = KEYMAP[e.code];
   if(e.code==='KeyB'){
