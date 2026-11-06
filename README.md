@@ -80,13 +80,16 @@ trunk serve   # http://localhost:8080
 ## Структура проекта
 ```
 index.html             — каркас: HTML + CSS, JS выброшен (только Trunk-загрузчик)
-src/game.rs            — ядро игры без веба (генерация, BFS, враги, i18n) — 1-в-1 из старого JS
-src/web.rs             — обвязка wasm32: канвас, HUD, ввод, звук, таймеры, localStorage
-src/tests.rs           — 105 тестов ядра (cargo test)
+src/game/              — ядро игры без веба (генерация, BFS, враги, i18n) — 1-в-1 из старого JS
+  mod.rs (struct Game + init), consts, rng, i18n, types, stats, bfs,
+  gen, visibility, player (ходы/озёра), enemies, end (бомбы/финал)
+src/web/               — обвязка wasm32: mod (ввод, таймеры), hud (DOM/localStorage),
+  audio (WebAudio-синтез), render (канвас)
+src/tests.rs           — 109 тестов ядра (cargo test)
 specs/features.feature — Gherkin-спецификация (BDD, ~95 сценариев)
 ```
 ## Тесты
 ```
-cargo test   # 105/105
+cargo test   # 109/109
 trunk build  # dist/ — статика для GitHub Pages
 ```
