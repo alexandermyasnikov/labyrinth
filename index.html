@@ -1386,6 +1386,15 @@ function render(){
     for(const b of bosses) if(bossAim.has(b[0]+','+b[1])) aimWedge(b[0], b[1]);
   }
   drawEmoji('🧙', C + CS/2, C + CS/2, 50);
+  // шкала здоровья над персонажем: фон + заливка (зелёный -> красный по HP)
+  {
+    const bw = 38, bh = 5, bx = C + CS/2 - bw/2, by = C + CS/2 - CS/2 + 4;
+    ctx.fillStyle = 'rgba(0,0,0,.7)';
+    ctx.fillRect(bx-1, by-1, bw+2, bh+2);
+    const frac = Math.max(0, Math.min(1, health / CFG.MAX_HEALTH));
+    ctx.fillStyle = frac > 0.6 ? '#58d68d' : frac > 0.3 ? '#f5c542' : '#e63946';
+    ctx.fillRect(bx, by, bw*frac, bh);
+  }
   // шеврон компаса: статичный, на границе клетки игрока (не в соседней клетке),
   // скрыт когда цель уже в тумане (dist <= FOG_RADIUS) — см. specs/research-compass.md
   {
