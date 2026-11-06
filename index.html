@@ -203,8 +203,8 @@ function updateHUD(){
   // направление по оси с большей разницей координат (максимальное)
   const dr = pr - ar, dc = pc - ac;
   if (dr === 0 && dc === 0) dir = '●';
-  else if (Math.abs(dr) >= Math.abs(dc)) dir = dr < 0 ? '⬆' : '⬇';
-  else dir = dc < 0 ? '⬅' : '➡';
+  else if (Math.abs(dr) >= Math.abs(dc)) dir = dr > 0 ? '⬆' : '⬇';
+  else dir = dc > 0 ? '⬅' : '➡';
   hudCompass.textContent = dir;
   hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + 'с';
 }
@@ -1040,7 +1040,7 @@ function render(){
     ctx.save();
     ctx.font = '46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.globalAlpha = 0.85;
-    ctx.fillText(dx===0&&dy===0 ? '🏆' : (dy<0?'⬆':dy>0?'⬇':dx<0?'⬅':'➡'), C + CS/2 - 120*dx, C + CS/2 - 120*dy);
+    ctx.fillText(dx===0&&dy===0 ? '🏆' : (dy>0?'⬆':dy<0?'⬇':dx>0?'➡':'⬅'), C + CS/2 - 120*dx, C + CS/2 - 120*dy);
     ctx.restore();
   }
   // красная виньетка при уроне
