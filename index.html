@@ -1155,10 +1155,16 @@ function render(){
     }
     else if (Math.abs(dr) >= Math.abs(dc)){ dy = dr > 0 ? -1 : 1; ch = dy < 0 ? '⬆' : '⬇'; }
     else                                   { dx = dc > 0 ? -1 : 1; ch = dx < 0 ? '⬅' : '➡'; }
+    const px = C + CS/2 + CS*dx, py = C + CS/2 + CS*dy;
     ctx.save();
+    // контрастная подложка, чтобы стрелка читалась даже на тёмном фоне тумана
+    ctx.fillStyle='rgba(24,27,34,.85)';
+    ctx.beginPath(); ctx.arc(px, py, 24, 0, 7); ctx.fill();
     ctx.font = '46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.globalAlpha = 0.85;
-    ctx.fillText(ch, C + CS/2 + CS*dx, C + CS/2 + CS*dy);
+    ctx.strokeStyle='rgba(0,0,0,.8)'; ctx.lineWidth=5;
+    ctx.strokeText(ch, px, py);
+    ctx.fillStyle='#ffd166';
+    ctx.fillText(ch, px, py);
     ctx.restore();
   }
   // красная виньетка при уроне
