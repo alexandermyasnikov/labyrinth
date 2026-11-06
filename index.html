@@ -1151,7 +1151,7 @@ function render(){
     ctx.save();
     ctx.font = '46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.globalAlpha = 0.85;
-    ctx.fillText(dx===0&&dy===0 ? '🏆' : (dy>0?'⬆':dy<0?'⬇':dx>0?'➡':'⬅'), C + CS/2, C + CS/2);
+    ctx.fillText(dx===0&&dy===0 ? '🏆' : (dy>0?'⬆':dy<0?'⬇':dx>0?'➡':'⬅'), C + CS/2 + 40*dx, C + CS/2 + 40*dy);
     ctx.restore();
   }
   // красная виньетка при уроне
