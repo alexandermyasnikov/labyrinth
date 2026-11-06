@@ -62,6 +62,3 @@
 index.html             — вся игра: HTML + CSS + JS в одном файле
 specs/features.feature — Gherkin-спецификация (BDD, ~80 сценариев)
 ```
-
-## Лицензия
-Проприетарная.
