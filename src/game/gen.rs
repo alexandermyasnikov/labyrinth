@@ -113,8 +113,8 @@ impl Game {
             .flat_map(|l| l.cells.iter().copied())
             .collect();
         for (r, c) in cells {
-            for d in 0..4 {
-                if let Some(n) = add((r, c), DIRS[d]) {
+            for (d, dir) in DIRS.iter().enumerate() {
+                if let Some(n) = add((r, c), *dir) {
                     if lake_set.contains(&n) {
                         self.wall[r][c][d] = false;
                         self.wall[n.0][n.1][d ^ 1] = false;

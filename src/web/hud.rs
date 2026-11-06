@@ -1,5 +1,4 @@
 use super::*;
-use crate::game::*;
 
 pub(crate) fn storage_get(win: &Window, k: &str) -> Option<String> {
     win.local_storage()

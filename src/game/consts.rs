@@ -1,5 +1,3 @@
-use super::*;
-
 pub const W: usize = 20;
 pub const H: usize = 20;
 pub const MAX_HEALTH: i32 = 5;

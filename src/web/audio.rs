@@ -1,5 +1,4 @@
 use super::*;
-use crate::game::*;
 
 impl Web {
     pub(crate) fn sfx(&mut self, s: Sfx) {

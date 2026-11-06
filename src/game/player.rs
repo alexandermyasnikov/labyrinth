@@ -53,7 +53,7 @@ impl Game {
         if self.combo == 10 {
             self.collect_achievements();
         }
-        if self.moves % 25 == 0 {
+        if self.moves.is_multiple_of(25) {
             self.stats.explored_max = self.stats.explored_max.max(self.count_explored());
             self.collect_achievements();
         }
@@ -132,8 +132,8 @@ impl Game {
             }
         }
         let mut in_lake_ops = vec![];
-        for i in 0..4 {
-            if let Some(n) = add(p, DIRS[i]) {
+        for &dir in DIRS.iter() {
+            if let Some(n) = add(p, dir) {
                 if self.in_lake(n) && open_to(&self.wall, p, n) {
                     in_lake_ops.push(n);
                 }
@@ -142,8 +142,8 @@ impl Game {
         if !in_lake_ops.is_empty() {
             return Some(in_lake_ops[self.rng.next_usize(in_lake_ops.len())]);
         }
-        for i in 0..4 {
-            if let Some(n) = add(p, DIRS[i]) {
+        for &dir in DIRS.iter() {
+            if let Some(n) = add(p, dir) {
                 if !self.in_lake(n) && open_to(&self.wall, p, n) {
                     return Some(n);
                 }
@@ -201,7 +201,6 @@ impl Game {
         self.cell_effects(cell);
     }
     fn cell_effects(&mut self, cell: Pos) {
-        let (r, c) = cell;
         // медведь в клетке: игрок получает ранение (и при шаге врага на игрока — bear_turn)
         if self.bears.contains(&cell) {
             self.sfx(Sfx::Bear);

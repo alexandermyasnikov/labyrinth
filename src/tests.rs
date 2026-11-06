@@ -84,7 +84,7 @@ fn rng_matches_mulberry32_reference() {
     let mut r = Rng::new(42);
     for _ in 0..1000 {
         let v = r.next_f64();
-        assert!(v >= 0.0 && v < 1.0);
+        assert!((0.0..1.0).contains(&v));
     }
     let mut r2 = Rng::new(42);
     let mut r3 = Rng::new(42);
@@ -241,7 +241,7 @@ fn level1_enemy_counts() {
     assert_eq!(g.bosses.len(), 1);
     assert!(g.zombies.len() <= 10);
     assert!(g.shooters.len() <= 7);
-    assert!(g.bears.len() >= 1 && g.bears.len() <= 30);
+    assert!(!g.bears.is_empty() && g.bears.len() <= 30);
     assert!(g.trap.len() <= 5);
     assert_eq!(g.fire.len(), 0, "огонь только со 2 уровня");
     assert_eq!(g.holes.len(), 4);
@@ -306,8 +306,8 @@ fn lake_cells_open_passages() {
         .flat_map(|l| l.cells.iter().copied())
         .collect();
     for &(r, c) in &lake_set {
-        for d in 0..4 {
-            if let Some(n) = add((r, c), DIRS[d]) {
+        for (d, dir) in DIRS.iter().enumerate() {
+            if let Some(n) = add((r, c), *dir) {
                 if lake_set.contains(&n) {
                     assert!(!g.wall[r][c][d], "lake passage open");
                     assert!(!g.wall[n.0][n.1][d ^ 1]);
@@ -990,7 +990,7 @@ fn boss_melee_hits_for_two() {
     // Проверяем: либо прицел, либо −2. Второй такт должен дать −1 (выстрел) или −2.
     let hp1 = g.health;
     g.boss_turn(now);
-    assert!(g.health <= hp1 - 1, "босс ранит вплотную");
+    assert!(g.health < hp1, "босс ранит вплотную");
     // прямого −2 проверяем через has_clear_shot=false путь: стена между → идёт и бьёт
 }
 #[test]
@@ -1374,7 +1374,7 @@ fn lang_roundtrip() {
 // --- HUD/символы ---
 #[test]
 fn cell_symbols() {
-    let mut g = game(1);
+    let g = game(1);
     assert_eq!(g.cell_symbol(g.chest.0, g.chest.1), "💰");
     assert_eq!(g.cell_symbol(g.exit.0, g.exit.1), "🚩");
     if let Some(k) = g.key {
@@ -1422,8 +1422,8 @@ fn dir_index_and_helpers() {
 fn bfs_on_generated_maze_all_reachable() {
     let g = game(20261106);
     let b = bfs(&g.wall, g.player, None);
-    assert_eq!(b.dist[g.exit.0][g.exit.1] != -1, true);
-    assert_eq!(b.dist[g.chest.0][g.chest.1] != -1, true);
+    assert_ne!(b.dist[g.exit.0][g.exit.1], -1);
+    assert_ne!(b.dist[g.chest.0][g.chest.1], -1);
 }
 #[test]
 fn damage_at_zero_hp_clamps() {

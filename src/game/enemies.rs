@@ -109,9 +109,7 @@ impl Game {
             return None;
         }
         let b = bfs(&self.wall, from, None);
-        if b.prev[to.0][to.1].is_none() {
-            return None;
-        }
+        b.prev[to.0][to.1]?;
         let mut node = to;
         while let Some(p) = b.prev[node.0][node.1] {
             if p == from {

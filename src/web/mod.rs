@@ -37,7 +37,7 @@ pub(crate) struct Web {
     pub(crate) saved_explored: u32,
 }
 #[derive(Clone)]
-struct Particle {
+pub(crate) struct Particle {
     x: f64,
     y: f64,
     vx: f64,

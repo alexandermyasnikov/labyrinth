@@ -90,6 +90,8 @@ specs/features.feature — Gherkin-спецификация (BDD, ~95 сцена
 ```
 ## Тесты
 ```
-cargo test   # 109/109
-trunk build  # dist/ — статика для GitHub Pages
+cargo test     # 110/110
+cargo fmt --all
+cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+trunk build    # dist/ — статика для GitHub Pages
 ```

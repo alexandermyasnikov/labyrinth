@@ -188,8 +188,8 @@ impl Game {
         {
             let sset: HashSet<Pos> = self.swamps.iter().copied().collect();
             for &(r, c) in &self.swamps {
-                for d in 0..4 {
-                    if let Some((nr, nc)) = add((r, c), DIRS[d]) {
+                for (d, dir) in DIRS.iter().enumerate() {
+                    if let Some((nr, nc)) = add((r, c), *dir) {
                         if sset.contains(&(nr, nc)) {
                             self.wall[r][c][d] = false;
                             self.wall[nr][nc][d ^ 1] = false;
@@ -239,7 +239,7 @@ impl Game {
             .chain(self.key.iter().copied())
             .chain(self.holes.iter().copied())
             .chain(self.arsenal.iter().copied())
-            .chain([self.hospital].into_iter())
+            .chain([self.hospital])
         {
             occupied.insert(c);
         }

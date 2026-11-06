@@ -29,6 +29,11 @@ jobs:
       - name: Install trunk
         run: cargo install --locked trunk
 
+      - name: Lint (clippy + fmt)
+        run: |
+          cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+          cargo fmt --all -- --check
+
       - name: Build WASM
         run: trunk build --release
 
