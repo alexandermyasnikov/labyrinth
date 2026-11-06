@@ -130,6 +130,16 @@ impl Web {
                 ),
             };
             txt(&self.doc, "ov-title", &title);
+            // после победы кнопка ведёт на следующий (новый, сложнее) уровень
+            txt(
+                &self.doc,
+                "ov-replay",
+                match self.g.over_kind {
+                    Some(OverKind::Win) => self.g.t("btnNextLevel"),
+                    _ => self.g.t("btnReplay"),
+                }
+                .as_str(),
+            );
             if let Some(e) = el(&self.doc, "ov-title") {
                 e.set_attribute("style", &format!("color:{}", color)).ok();
             }

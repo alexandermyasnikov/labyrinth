@@ -1585,16 +1585,49 @@ fn next_level_after_win_is_new_maze() {
 }
 
 #[test]
-fn restart_gives_up_to_level_1_same_world() {
-    // «Заново» посреди уровня: тот же лабиринт, но с 1-го уровня
+fn restart_keeps_current_level_same_world() {
+    // «Заново» посреди уровня: рестарт ТЕКУЩЕГО уровня — тот же мир, тот же уровень
     let mut g = game(42);
     g.level = 4;
     let wall = g.wall;
     g.restart(100_000);
-    assert_eq!(g.level, 1);
+    assert_eq!(g.level, 4);
     assert_eq!(g.wall, wall, "тот же мир");
     assert_eq!(g.health, 5);
     assert_eq!(g.moves, 0);
+}
+
+#[test]
+fn player_walking_onto_bear_gets_hurt() {
+    // spec: «Медведь при встрече ранит игрока» — встретились в одной клетке
+    let mut g = game(1);
+    open_all(&mut g);
+    place_player(&mut g, (10, 9));
+    g.lakes.clear();
+    g.holes.clear();
+    g.trap.clear();
+    g.fire.clear();
+    g.swamps.clear();
+    g.arsenal.clear();
+    g.bears = vec![(10, 10)];
+    g.try_move(0, 1, 1000);
+    assert_eq!(g.health, 4, "вход на клетку медведя ранит");
+    // сундук при HP 4 не выпадает, урон реальный
+    let mut g = game(1);
+    open_all(&mut g);
+    place_player(&mut g, (10, 8));
+    g.lakes.clear();
+    g.holes.clear();
+    g.trap.clear();
+    g.fire.clear();
+    g.swamps.clear();
+    g.arsenal.clear();
+    g.bears = vec![(10, 10)];
+    g.health = 3;
+    g.carrying = true;
+    g.dash(0, 1, 1000);
+    assert_eq!(g.health, 2, "рывок на медведя тоже ранит");
+    assert!(!g.carrying, "урон ниже 3 роняет сундук");
 }
 
 #[test]

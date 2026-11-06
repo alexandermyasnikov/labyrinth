@@ -202,6 +202,11 @@ impl Game {
     }
     fn cell_effects(&mut self, cell: Pos) {
         let (r, c) = cell;
+        // медведь в клетке: игрок получает ранение (и при шаге врага на игрока — bear_turn)
+        if self.bears.contains(&cell) {
+            self.sfx(Sfx::Bear);
+            self.damage_player(1, "w_bear");
+        }
         if self.arsenal.contains(&cell) {
             self.sfx(Sfx::Heal);
             self.health = MAX_HEALTH;

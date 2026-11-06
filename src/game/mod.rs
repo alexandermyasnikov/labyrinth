@@ -320,10 +320,9 @@ impl Game {
         self.log = format!("{}{}{}", self.t("w_reset1"), lv, self.t("w_reset1b"));
     }
 
-    // «Заново» (R / кнопка посреди уровня): бросить уровень, начать с 1-го, тот же мир.
-    // Вызов после победы идёт не сюда, а в new_world — см. web::restart.
+    // «Заново» (R / кнопка под картой): рестарт ТЕКУЩЕГО уровня — тот же мир, тот же уровень.
+    // Вызов после победы идёт не сюда, а в new_world (см. web::restart).
     pub fn restart(&mut self, now: u64) {
-        self.level = 1;
         self.init_world(now, false);
     }
     pub fn new_world(&mut self, now: u64) {
