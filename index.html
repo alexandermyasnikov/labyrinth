@@ -439,29 +439,22 @@ function activeTarget(){
 }
 
 // Направление от игрока к активной цели. Возвращает { dir, dx, dy, dist }, где
-// dir — символ-указатель; dx/dy — первый шаг кратчайшего BFS-пути к цели
-// (честный проход, а не знак разницы позиций — не указывает в стену, см. specs/research-compass.md);
+// dir — символ-указатель по ПРЯМОЙ линии к цели (8 сторон, с диагоналями);
+// dx/dy — знак разницы позиций (dx — столбец, dy — строка, canvas y вниз);
 // dist — BFS-дистанция до цели (для скрытия шеврона в тумане).
-const STEP_GLYPH = { '1,0':'⬇', '-1,0':'⬆', '0,1':'➡', '0,-1':'⬅' };
+// NB: BFS-шаг вместо прямой линии давал «неправильное» направление (первый
+// проход вокруг стены ≠ где цель) — возвращено прямое направление.
 function directionToTarget(){
   const [targetRow, targetCol] = activeTarget();
   const [playerRow, playerCol] = player;
   if (playerRow === targetRow && playerCol === targetCol) return { dir: '🏆', dx: 0, dy: 0, dist: 0 };
-  const { dist, prev } = bfs([playerRow,playerCol], ()=>true);
+  const { dist } = bfs([playerRow,playerCol], ()=>true);
   const d = dist[targetRow][targetCol];
-  if(d === -1 || d == null || !prev[targetRow][targetCol]){
-    // недостижима (не должно в связном лабиринте): fallback по знаку разницы
-    const dRow = playerRow - targetRow, dCol = playerCol - targetCol;
-    const dy = dRow !== 0 ? (dRow > 0 ? -1 : 1) : 0;
-    const dx = dCol !== 0 ? (dCol > 0 ? -1 : 1) : 0;
-    const glyph = Math.abs(dRow) >= Math.abs(dCol) ? (dy<0?'⬆':'⬇') : (dx<0?'⬅':'➡');
-    return { dir: glyph, dx: Math.abs(dRow)>=Math.abs(dCol)?0:dx, dy: Math.abs(dRow)>=Math.abs(dCol)?dy:0, dist: 999 };
-  }
-  // первый шаг: идём от цели назад, пока prev не станет стартом
-  let node = [targetRow, targetCol];
-  while(prev[node[0]][node[1]] && !(prev[node[0]][node[1]][0]===playerRow && prev[node[0]][node[1]][1]===playerCol)) node = prev[node[0]][node[1]];
-  const dr = node[0]-playerRow, dc = node[1]-playerCol;
-  return { dir: STEP_GLYPH[dr+','+dc] || '➡', dx: dc, dy: dr, dist: d };
+  const dRow = playerRow - targetRow, dCol = playerCol - targetCol; // игрок минус цель
+  const dy = dRow !== 0 ? (dRow > 0 ? -1 : 1) : 0;
+  const dx = dCol !== 0 ? (dCol > 0 ? -1 : 1) : 0;
+  const dir = (dy<0 ? (dx<0 ? '↖' : dx>0 ? '↗' : '⬆') : dy>0 ? (dx<0 ? '↙' : dx>0 ? '↘' : '⬇') : (dx<0 ? '⬅' : '➡'));
+  return { dir, dx, dy, dist: (d===-1 || d==null) ? 999 : d };
 }
 
 // ========== Состояние ==========
