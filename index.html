@@ -202,9 +202,10 @@ function updateHUD(){
   const [ar, ac] = activeTarget();
   const [pr, pc] = player;
   let dir = '';
-  // направление по оси с большей разницей координат (максимальное)
+  // направление по осям; если разница по обеим осям — диагональ
   const dr = pr - ar, dc = pc - ac;
   if (dr === 0 && dc === 0) dir = '●';
+  else if (dr !== 0 && dc !== 0) dir = (dr>0?'⬆':'⬇') + (dc>0?'⬅':'➡');
   else if (Math.abs(dr) >= Math.abs(dc)) dir = dr > 0 ? '⬆' : '⬇';
   else dir = dc > 0 ? '⬅' : '➡';
   hudCompass.textContent = dir;
@@ -1147,6 +1148,11 @@ function render(){
     // направление по оси с большей разницей (как у компаса); canvas y растёт вниз
     const dr = pr - ar, dc = pc - ac;
     if (dr === 0 && dc === 0) ch = '🏆';
+    else if (dr !== 0 && dc !== 0){
+      // диагональ: одновременно по обеим осям
+      dy = dr > 0 ? -1 : 1; dx = dc > 0 ? -1 : 1;
+      ch = (dy<0? (dx<0?'↖':'↗') : (dx<0?'↙':'↘'));
+    }
     else if (Math.abs(dr) >= Math.abs(dc)){ dy = dr > 0 ? -1 : 1; ch = dy < 0 ? '⬆' : '⬇'; }
     else                                   { dx = dc > 0 ? -1 : 1; ch = dx < 0 ? '⬅' : '➡'; }
     ctx.save();
