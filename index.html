@@ -244,7 +244,6 @@ let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
 let animFrom = null;    // логическая клетка-старт визуальной анимации
 let hurtUntil = 0;      // временной таймстамп конца красной вспышки при уроне
 let dashUntil = 0;      // кулдаун рывка (мс)
-let dashDr=0, dashDc=0; // направление текущего рывка
 let explored = []; // карта-память: разведанные клетки
 
 let msgTimer = null; // таймер автоскрытия всплывающего сообщения
@@ -271,7 +270,7 @@ function genWalls(){
   }
   return w;
 }
-// ЗАМЕНЕНО: вероятность 3 из 5 решается прямо в bomb() — список не нужен.
+// Достижимость всех клеток из стартовой (для проверки связности).
 function cellCount(){
   const mark = Array.from({length:H},()=>Array(W).fill(false));
   const st=[[0,0]]; mark[0][0]=true; let n=1;
@@ -404,16 +403,20 @@ function genSwamps(){
   }
   return res;
 }
-function init(){
-  overlay.hidden = true;
+function clearAllTimers(){
   if (timerId) { clearInterval(timerId); timerId = null; }
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
   if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
-  shooterAim.clear();
-  bossAim.clear();
+}
+// Сброс прицеливания всех врагов (стрелки и босс).
+function clearAims(){ shooterAim.clear(); bossAim.clear(); }
+function init(){
+  overlay.hidden = true;
+  clearAllTimers();
+  clearAims();
   shots = [];
   boom = null;
   dashFlash = null;
@@ -573,13 +576,6 @@ function drawPos(){
   }
   return [pr, pc];
 }
-function bestLine(){
-  const b = loadBest();
-  let s = 'Рекорд: уровень <b>'+b.level+'</b>';
-  if(b.time1!==null) s += ' · лучшее время L1 <b>'+b.time1.toFixed(1)+'</b>с';
-  bestlineEl.innerHTML = s;
-}
-
 // ========== Движение и ходы ==========
 function tryMove(dr,dc){
   if(over) return;
@@ -615,7 +611,6 @@ function dash(dr,dc){
   player=[r2,c2];
   markExplored(); computeVisibility();
   dashUntil = now + 1500;
-  dashDr=dr; dashDc=dc;
   dashFlash = { r: player[0], c: player[1], t0: now };
   sfx('step');
   msg('Рывок!'); saveGame(); render();
@@ -947,6 +942,12 @@ function saveBest(){
   try{ localStorage.setItem('labyrinth.best', JSON.stringify(b)); }catch(_){}
   bestLine();
 }
+function bestLine(){
+  const b = loadBest();
+  let s = 'Рекорд: уровень <b>'+b.level+'</b>';
+  if(b.time1!==null) s += ' · лучшее время L1 <b>'+b.time1.toFixed(1)+'</b>с';
+  bestlineEl.innerHTML = s;
+}
 
 function endWin(){
   over=true; level++;
@@ -955,14 +956,8 @@ function endWin(){
   saveGame();
   saveBest();
   msg('🏆 ПОБЕДА! Ты вынес сундук из лабиринта.'); info('Уровень ' + level + '! Сложность растёт. Нажми R, чтобы сыграть ещё.');
-  if (timerId) { clearInterval(timerId); timerId = null; }
-  if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
-  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
-  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
-  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
-  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
-  shooterAim.clear();
-  bossAim.clear();
+  clearAllTimers();
+  clearAims();
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
     'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -975,14 +970,8 @@ function endLose(){
   sfx('lose');
   saveGame();
   msg('💀 Ты погиб. Игра окончена.'); info('Нажми R, чтобы сыграть ещё.');
-  if (timerId) { clearInterval(timerId); timerId = null; }
-  if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
-  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
-  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
-  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
-  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
-  shooterAim.clear();
-  bossAim.clear();
+  clearAllTimers();
+  clearAims();
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
     '<br>Уровень сброшен до 1');
@@ -993,14 +982,8 @@ function endTimeout(){
   moving=false; camR=camC=1;
   sfx('lose');
   saveGame();
-  if (timerId) { clearInterval(timerId); timerId = null; }
-  if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
-  if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
-  if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
-  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
-  if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
-  shooterAim.clear();
-  bossAim.clear();
+  clearAllTimers();
+  clearAims();
   carrying = false; // клад при проигрыше не переносится
   level = 1;
   msg('⏰ Время вышло!');
@@ -1013,6 +996,11 @@ function endTimeout(){
 const VIEW = 10; // размер окна просмотра на экране (клеток)
 const CS = 56;
 const N = VIEW * CS, C = N/2;
+// цвет подложки клетки по символу объекта
+const CELL_BG = {
+  '🚩':'#3a2f14', '💰':'#3a3318', '🌀':'#17324a', '🕳':'#1a1a1f',
+  '📦':'#2f2a18', '💉':'#2a1f24', '🪷':'#20301c', '⚠️':'#2b2118'
+};
 function render(){
   updateHUD();
   ctx.clearRect(0,0,N,N);
@@ -1037,16 +1025,8 @@ function render(){
     if(!visible(r,c)) continue;
     const x=sc(c), y=sx(r);
     const sym=cellSymbol(r,c);
-    // подложка
-    if(sym==='🚩') ctx.fillStyle='#3a2f14';
-    else if(sym==='💰') ctx.fillStyle='#3a3318';
-    else if(sym==='🌀') ctx.fillStyle='#17324a';
-    else if(sym==='🕳') ctx.fillStyle='#1a1a1f';
-    else if(sym==='📦') ctx.fillStyle='#2f2a18';
-    else if(sym==='💉') ctx.fillStyle='#2a1f24';
-    else if(sym==='🪷') ctx.fillStyle='#20301c';
-    else if(sym==='⚠️') ctx.fillStyle='#2b2118';
-    else ctx.fillStyle='#262a34';
+    // подложка клетки по типу объекта
+    ctx.fillStyle = CELL_BG[sym] || '#262a34';
     ctx.fillRect(x,y,CS,CS);
     // светлая рамка клетки
     ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
@@ -1072,19 +1052,15 @@ function render(){
       else line(x+CS,y,x+CS,y+CS);
     }
   }
-  // медведи (только если видны)
-  for(const bear of bears){
-    if(visible(bear[0],bear[1])) drawEmoji('🐻', sc(bear[1])+CS/2, sx(bear[0])+CS/2, 28);
-  }
-  // огненные ловушки (только если видны)
-  for(const f of fire){
-    if(visible(f[0],f[1])) drawEmoji('🔥', sc(f[1])+CS/2, sx(f[0])+CS/2, 22);
-  }
-  // зомби (только если видны)
-  for(const z of zombies){
-    if(visible(z[0],z[1])) drawEmoji('🧟', sc(z[1])+CS/2, sx(z[0])+CS/2, 24);
-  }
-  // стрелки (только если видны)
+  // враги и ловушки (рисуются только если видны)
+  const drawEntity = (list, emoji, size) => {
+    for(const e of list){
+      if(visible(e[0],e[1])) drawEmoji(emoji, sc(e[1])+CS/2, sx(e[0])+CS/2, size);
+    }
+  };
+  drawEntity(bears, '🐻', 28);
+  drawEntity(fire, '🔥', 22);
+  drawEntity(zombies, '🧟', 24);
   for(const s of shooters){
     if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🏹' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
   }
@@ -1129,29 +1105,20 @@ function render(){
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(C+CS/2, C+CS/2, CS/2+4, 0, 7); ctx.stroke();
     // явная подсветка сектора, откуда целится каждый охотник (красный клин на периметре)
-    const R1 = CS/2+3, R2 = CS/2+14, W = 0.5;
+    const R1 = CS/2+3, R2 = CS/2+14, sectorHalf = 0.5;
     const ccx = C+CS/2, ccy = C+CS/2;
     ctx.fillStyle = blink ? 'rgba(230,57,70,.55)' : 'rgba(255,209,102,.45)';
-    // стрелки, целящиеся в игрока
-    for(const s of shooters){
-      if(!shooterAim.has(s[0]+','+s[1])) continue;
-      const dr = s[0]-player[0], dc = s[1]-player[1];
+    // клинья для всех целящихся в игрока (стрелки и охотники-боссы)
+    const aimWedge = (r, c) => {
+      const dr = r-player[0], dc = c-player[1];
       const ang = Math.atan2(dr, dc);
       ctx.beginPath();
-      ctx.arc(ccx, ccy, R2, ang-W, ang+W);
-      ctx.arc(ccx, ccy, R1, ang+W, ang-W, true);
+      ctx.arc(ccx, ccy, R2, ang-sectorHalf, ang+sectorHalf);
+      ctx.arc(ccx, ccy, R1, ang+sectorHalf, ang-sectorHalf, true);
       ctx.closePath(); ctx.fill();
-    }
-    // охотники-боссы, прицелившиеся в игрока
-    for(const b of bosses){
-      if(!bossAim.has(b[0]+','+b[1])) continue;
-      const dr = b[0]-player[0], dc = b[1]-player[1];
-      const ang = Math.atan2(dr, dc);
-      ctx.beginPath();
-      ctx.arc(ccx, ccy, R2, ang-W, ang+W);
-      ctx.arc(ccx, ccy, R1, ang+W, ang-W, true);
-      ctx.closePath(); ctx.fill();
-    }
+    };
+    for(const s of shooters) if(shooterAim.has(s[0]+','+s[1])) aimWedge(s[0], s[1]);
+    for(const b of bosses) if(bossAim.has(b[0]+','+b[1])) aimWedge(b[0], b[1]);
   }
   drawEmoji('🧙', C + CS/2, C + CS/2, 50);
   // пульс-подсказка направления к цели — отображается всегда
