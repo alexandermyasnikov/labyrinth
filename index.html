@@ -438,8 +438,7 @@ function init(){
   trap = cells.slice(14, 14 + 2 + extraTrap);
   bears = [cells[19]].concat(cells.slice(20, 20 + extraBear));
   fire = cells.slice(24, 24 + Math.min(level - 1, 3));
-  const extraZombie = Math.min(level, 30);
-  zombies = cells.slice(34, 34 + extraZombie);
+  zombies = cells.slice(34, 44); // ~10 зомби, как и стрелков (ровно 10)
   shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
   bosses = cells.slice(74, 77); // 3 охотника-босса, знают позицию игрока и преследуют
   // враги не должны появляться в стартовой зоне игрока (радиус 3)
