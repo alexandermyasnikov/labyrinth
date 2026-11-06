@@ -21,18 +21,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install trunk
+        run: cargo install --locked trunk
+
+      - name: Build WASM
+        run: trunk build --release
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
-      - name: Prepare site
-        run: |
-          mkdir -p ./_site
-          cp ./index.html ./_site/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './_site'
+          path: './dist'
 
   deploy:
     needs: build

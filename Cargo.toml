@@ -1,0 +1,21 @@
+[package]
+name = "labyrinth"
+version = "0.1.0"
+edition = "2021"
+description = "Лабиринт 20x20 — Rust → WASM (wasm-bindgen + web-sys + gloo)"
+
+[dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+  "Window", "Document", "Element", "HtmlElement", "HtmlCanvasElement",
+  "CanvasRenderingContext2d", "CanvasGradient", "CanvasPattern", "Event",
+  "KeyboardEvent", "PointerEvent", "MouseEvent", "NodeList", "DomTokenList",
+  "AudioContext", "AudioContextState", "BaseAudioContext", "AudioDestinationNode",
+  "AudioParam", "OscillatorNode", "OscillatorType", "GainNode", "Storage",
+  "Location", "Performance",
+] }
+gloo = { version = "0.10", features = ["timers"] }
+js-sys = "0.3"
+
+[profile.release]
+opt-level = "s"
