@@ -80,6 +80,8 @@
     transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
   }
   #restart:hover { filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 12px 32px rgba(255,159,67,.5); }
+  #new-world { margin:0 6px 18px; padding:11px 24px; font-size:15px; font-weight:700; border:1px solid var(--line); border-radius:999px; cursor:pointer; color:#ffe9a8; background:#222b3d; letter-spacing:1px; transition:transform .15s ease, filter .2s ease; }
+  #new-world:hover { filter:brightness(1.15); transform:translateY(-1px); }
   #restart:active { transform:translateY(0); }
   .k { color:var(--muted); font-weight:700; background:#222b3d; padding:1px 8px; border-radius:6px; border:1px solid var(--line); }
   #overlay{ position:fixed; inset:0; background:rgba(6,8,12,.72);
@@ -157,6 +159,7 @@
   </div>
   <div id="legend" data-i18n="leg" data-html="1"></div>
   <button id="restart" data-i18n="btnRestart">Заново (R)</button>
+  <button id="new-world" data-i18n="btnNewWorld">🎲 Новый мир (N)</button>
   <div id="help" hidden>
     <div id="help-panel">
       <h2 data-i18n="helpTitle">Помощь</h2>
@@ -198,10 +201,10 @@ const I18N = {
   ru: {
     hudHealth:'Здоровье', hudBombs:'Бомбы', hudChest:'Клад', hudKey:'Ключ',
     hudLevel:'Уровень', hudMoves:'Ходы', hudTime:'Время',
-    logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново · P — пауза',
+    logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново · N — новый мир · P — пауза',
     statusStart:'Найди сундук и вынеси его через выход.', title:'Лабиринт',
     leg:'<span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span><span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span><span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span><span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>',
-    btnRestart:'Заново (R)', btnReplay:'Играть снова',
+    btnRestart:'Заново (R)', btnNewWorld:'🎲 Новый мир (N)', btnReplay:'Играть снова',
     helpTitle:'Помощь',
     help1:'<b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.',
     help2:'<b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь',
@@ -240,10 +243,10 @@ const I18N = {
   en: {
     hudHealth:'Health', hudBombs:'Bombs', hudChest:'Chest', hudKey:'Key',
     hudLevel:'Level', hudMoves:'Moves', hudTime:'Time',
-    logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart · P — pause',
+    logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart · N — new maze · P — pause',
     statusStart:'Find the chest and carry it out through the exit.', title:'labyrinth',
     leg:'<span>🧙 player</span><span>💰 chest</span><span>🚩 exit</span><span>🗝️ key</span><span>💉 hospital</span><span>📦 arsenal</span><span>🌀 lake</span><span>🕳 hole</span><span>🪷 swamp</span><span>🐻 bear</span><span>⚠️ trap</span><span>🔥 fire</span><span>🧟 zombie</span><span>👮 shooter</span><span>🥷 boss</span><span><span class="k">B</span> — destroy wall · <span class="k">R</span> — restart</span>',
-    btnRestart:'Restart (R)', btnReplay:'Play again',
+    btnRestart:'Restart (R)', btnNewWorld:'🎲 New maze (N)', btnReplay:'Play again',
     helpTitle:'Help',
     help1:'<b>Goal:</b> find the chest 💰, pick it up and carry it through the exit 🚩.',
     help2:'<b>Controls:</b> arrows / WASD — move · <span class="k">Shift</span>+arrow — dash one cell · <span class="k">B</span> — bomb (wall) · <span class="k">R</span> — restart · <span class="k">H</span> — help',
@@ -1563,6 +1566,7 @@ const KEYMAP = {
 document.addEventListener('keydown', e=>{
   if(e.code==='KeyP' || e.code==='Escape'){ togglePause(); return; }
   if(e.code==='KeyR'){ init(); render(); return; }
+  if(e.code==='KeyN'){ init(); render(); return; } // новый мир со случайным сидом
   if(paused) return; // в паузе только выход из неё и рестарт
   if(e.code==='KeyH'){ toggleHelp(); return; }
   const dir = KEYMAP[e.code];
@@ -1580,6 +1584,7 @@ document.addEventListener('keydown', e=>{
   }
 });
 document.getElementById('restart').addEventListener('click', ()=>{ init(); render(); });
+document.getElementById('new-world').addEventListener('click', ()=>{ init(); render(); });
 helpEl.addEventListener('click', (e)=>{ if(e.target===helpEl && helpOpen) toggleHelp(); });
 if(pauseEl) pauseEl.addEventListener('click', (e)=>{ if(e.target===pauseEl && paused) togglePause(); });
 ovReplay.addEventListener('click', ()=>{ init(); render(); });
