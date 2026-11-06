@@ -1380,20 +1380,24 @@ function render(){
     for(const b of bosses) if(bossAim.has(b[0]+','+b[1])) aimWedge(b[0], b[1]);
   }
   drawEmoji('🧙', C + CS/2, C + CS/2, 50);
-  // пульс-подсказка направления к цели — отображается всегда
+  // пульс-подсказка направления к цели: полупрозрачная, компактная, дышит альфой.
+  // На цели (🏆) не рисуется — игрок уже на ней, стрелка избыточна.
   {
     const { dir, dx, dy } = directionToTarget();
-    const px = C + CS/2 + CS*dx, py = C + CS/2 + CS*dy;
-    ctx.save();
-    // контрастная подложка, чтобы стрелка читалась даже на тёмном фоне тумана
-    ctx.fillStyle='rgba(24,27,34,.85)';
-    ctx.beginPath(); ctx.arc(px, py, 24, 0, 7); ctx.fill();
-    ctx.font = '46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.strokeStyle='rgba(0,0,0,.8)'; ctx.lineWidth=5;
-    ctx.strokeText(dir, px, py);
-    ctx.fillStyle='#ffd166';
-    ctx.fillText(dir, px, py);
-    ctx.restore();
+    if(dir !== '🏆'){
+      const px = C + CS/2 + CS*dx, py = C + CS/2 + CS*dy;
+      const pulse = 0.42 + 0.18 * Math.sin(Date.now() / 550); // мягкая пульсация 0.24..0.60
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle='rgba(24,27,34,.5)';
+      ctx.beginPath(); ctx.arc(px, py, 16, 0, 7); ctx.fill();
+      ctx.font = '28px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=3;
+      ctx.strokeText(dir, px, py);
+      ctx.fillStyle='#ffd166';
+      ctx.fillText(dir, px, py);
+      ctx.restore();
+    }
   }
   // красная виньетка при уроне
   const now = Date.now();
