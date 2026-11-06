@@ -312,7 +312,8 @@ const CFG = {
   MOVE_CD: 150, DASH_CD: 1500,                          // мс между ходами / рывком
   FOG_RADIUS: 3, VIEW: 10, CS: 56,                      // туман BFS, окно камеры
   SWAMP_SKIPS: 3, BOSS_AIM_DIST: 3,                     // болото, дальность босса
-  BEAR_MS: 1500, ZOMBIE_MS: 1500, SHOOTER_MS: 2000, BOSS_MS: 1200, RIVER_MS: 2000,
+  BEAR_MS: 1800, ZOMBIE_MS: 2000, SHOOTER_MS: 2500, BOSS_MS: 1800, RIVER_MS: 2000,
+  GRACE_MS: 5000, // стартовая передышка: враги не ходят первые 5с уровня
   COMBO_WINDOW: 900, COMBO_BONUS: 5, LOW_TIME: 30,      // комбо-окно мс, бонус за ход комбо, « мало времени »
 };
 // ========== Сидированный RNG (mulberry32) ==========
@@ -478,6 +479,7 @@ let dashUntil = 0;      // кулдаун рывка (мс)
 let explored = []; // карта-память: разведанные клетки
 // --- Новые фичи: очки/комбо/пауза/частицы/достижения ---
 let paused = false;       // пауза (P/Esc)
+let graceUntil = 0;       // враги не действуют до этого времени (стартовая передышка)
 let score = 0, combo = 0, comboUntil = 0, tookDamage = false; // очки, серия быстрых ходов, урон на уровне
 let parts = [];           // частицы: {x,y,vx,vy,life,color,size}
 let shake = 0;            // тряска камеры (амплитуда px, затухает)
@@ -752,6 +754,7 @@ function init(){
   moveLockUntil = 0; dashUntil = 0; hurtUntil = 0; // BUG FIX: после R первый ход/рывок не должен ждать кулдаун
   if(msgTimer){ clearTimeout(msgTimer); msgTimer = null; }
   score = 0; combo = 0; comboUntil = 0; tookDamage = false;
+  graceUntil = Date.now() + CFG.GRACE_MS;
   parts = []; shake = 0;
   skipMove = 0;
   moves = 0;
@@ -989,7 +992,7 @@ function nextHole(cell){
 // Штраф при ранении с кладом: сундук остаётся на клетке, где ранен. Для ловушек клад уже обработан.
 // Медведь:
 function bearTurn(){
-  if(over) return;
+  if(over || Date.now() < graceUntil) return;
   for(const bear of bears){
     if(over) break;
     const [br,bc]=bear;
@@ -1014,7 +1017,7 @@ function bearTurn(){
 
 // Зомби: преследуют игрока медленно, только если расстояние ≤5 клеток, кусают если в соседней.
 function zombieTurn(){
-  if(over) return;
+  if(over || Date.now() < graceUntil) return;
   for(const z of zombies){
     if(over) break;
     const [zr,zc]=z;
@@ -1037,7 +1040,7 @@ function zombieTurn(){
 // Охотник-босс: всегда знает позицию игрока. Преследует его по кратчайшему
 // пути (BFS); если есть прямая видимость — останавливается и стреляет, как охотник.
 function bossTurn(){
-  if(over) return;
+  if(over || Date.now() < graceUntil) return;
   for(const b of bosses){
     if(over) break;
     const key = b[0]+','+b[1];
@@ -1102,7 +1105,7 @@ function nextStepTo(r1,c1,r2,c2){
 
 // Стрелок: замечает игрока на дистанции ≤3 → целится (🏹) → стреляет.
 function shooterTurn(){
-  if(over) return;
+  if(over || Date.now() < graceUntil) return;
   for(const s of shooters){
     if(over) break;
     const [sr,sc]=s;
