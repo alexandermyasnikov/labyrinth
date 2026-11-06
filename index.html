@@ -111,6 +111,20 @@
   #start-actions{ display:flex; gap:12px; justify-content:center; margin-top:24px; }
   #help-panel p{ margin:0 0 10px; font-size:14px; color:#c6ceda; line-height:1.7; }
   #help-panel b{ color:var(--accent); }
+  .combo-pill{ display:inline-block; padding:0 8px; border-radius:999px; background:#222b3d; border:1px solid var(--line); color:var(--accent); font-weight:700; }
+  #hud-time.low{ color:#ff5c6c !important; animation:pulse .5s infinite alternate; }
+  @keyframes pulse{ from{ opacity:1;} to{ opacity:.45;} }
+  #hud-dash.ready{ color:#7cfc9a; }
+  #pad{ display:flex; gap:10px; align-items:center; justify-content:center; margin:4px 0 2px; }
+  #pad .dpad{ display:grid; grid-template-columns:repeat(3,46px); grid-template-rows:repeat(3,46px); gap:4px; }
+  #pad button{ width:46px; height:46px; border-radius:12px; border:1px solid var(--line); background:#222b3d; color:#ffe9a8; font-size:20px; cursor:pointer; font-family:inherit; }
+  #pad button:active{ transform:scale(.94); background:#2d3852; }
+  #pad .side{ display:flex; flex-direction:column; gap:6px; }
+  #pad .side button{ width:56px; height:46px; font-size:15px; }
+  #pause{ position:fixed; inset:0; background:rgba(6,8,12,.72); display:flex; align-items:center; justify-content:center; z-index:12; backdrop-filter:blur(6px); }
+  #pause[hidden]{ display:none; }
+  #pause-panel{ background:linear-gradient(180deg,#202a3c,#171e2d); border:1px solid var(--line); border-radius:20px; padding:28px 40px; text-align:center; }
+  #pause-btn{ padding:4px 10px; margin-left:4px; font:inherit; font-size:12px; border-radius:999px; border:1px solid var(--line); background:#222b3d; color:#ffe9a8; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -121,7 +135,11 @@
     <span class="hud-row">
       <span><span data-i18n="hudHealth">Здоровье</span>: <b class="heart" id="hud-hp">♥♥♥</b></span>
       <span><span data-i18n="hudBombs">Бомбы</span>: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
+      <span><span data-i18n="hudScore">Очки</span>: <b id="hud-score">0</b></span>
+      <span><span class="combo-pill">🔥 <b id="hud-combo">x1</b></span></span>
+      <span><span data-i18n="hudDash">Рывок</span>: <b id="hud-dash">⚡</b></span>
       <button id="lang-btn" type="button"></button>
+      <button id="pause-btn" type="button" data-i18n="btnPause">⏸</button>
     </span>
     <span class="hud-row">
       <span><span data-i18n="hudChest">Клад</span>: <b id="hud-chest">✖</b></span>
@@ -142,7 +160,25 @@
       <h2 data-i18n="helpTitle">Помощь</h2>
       <p data-i18n="help1" data-html="1"><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p data-i18n="help2" data-html="1"><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p data-i18n="help3" data-html="1"><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.</p>
+      <p data-i18n="help3" data-html="1"><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь, 🧟 зомби, 👮 стрелки и 🥷 босс ходят по своим таймерам.</p>
+      <p data-i18n="help4" data-html="1"><b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или <span class="k">?seed=daily</span>.</p>
+    </div>
+  </div>
+  <div id="pad">
+    <div class="dpad">
+      <span></span><button id="pad-up" type="button" aria-label="Вверх">▲</button><span></span>
+      <button id="pad-left" type="button" aria-label="Влево">◀</button><span></span><button id="pad-right" type="button" aria-label="Вправо">▶</button>
+      <span></span><button id="pad-down" type="button" aria-label="Вниз">▼</button><span></span>
+    </div>
+    <div class="side">
+      <button id="pad-dash" type="button">⚡</button>
+      <button id="pad-bomb" type="button">💣</button>
+    </div>
+  </div>
+  <div id="pause" hidden>
+    <div id="pause-panel">
+      <h2 data-i18n="pausedTitle">⏸ ПАУЗА</h2>
+      <button id="resume-btn" data-i18n="btnResume">Продолжить (P)</button>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -159,14 +195,15 @@ const I18N = {
   ru: {
     hudHealth:'Здоровье', hudBombs:'Бомбы', hudChest:'Клад', hudKey:'Ключ',
     hudLevel:'Уровень', hudMoves:'Ходы', hudTime:'Время',
-    logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново',
+    logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново · P — пауза',
     statusStart:'Найди сундук и вынеси его через выход.', title:'Лабиринт',
     leg:'<span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span><span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span><span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span><span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>',
     btnRestart:'Заново (R)', btnReplay:'Играть снова',
     helpTitle:'Помощь',
     help1:'<b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.',
     help2:'<b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь',
-    help3:'<b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.',
+    help3:'<b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь, 🧟 зомби, 👮 стрелки и 🥷 босс ходят по своим таймерам (босс всегда знает, где ты).',
+    help4:'<b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или <span class="k">?seed=daily</span>.',
     w_river:'Течение озера несёт тебя.', w_hole:'Дырка — провал! Ты выходишь из другой дырки.',
     w_arsenal:'Арсенал! Здоровье и бомбы восстановлены (5).', w_hospital:'Госпиталь! Здоровье восстановлено.',
     w_trap:'Ловушка! Ты ранен. Здоровье: ', w_trapSafe:'Осторожно — здесь была ловушка, но ты не сработал её.',
@@ -176,6 +213,11 @@ const I18N = {
     w_bear:'Медведь настиг тебя! Ранен. Здоровье: ', w_zombie:'Зомби укусил! Здоровье: ',
     w_boss:'Охотник-босс подстрелил тебя! Здоровье: ', w_bossMelee:'Охотник-босс настиг тебя! Тяжёлое ранение. Здоровье: ',
     w_shooter:'Стрелок ранил тебя выстрелом! Здоровье: ', w_dropChest:'Клад выпал и остался тут.',
+    w_dropChestBack:'Сундук вернулся на исходную клетку.', hudScore:'Очки', hudCombo:'Комбо', hudDash:'Рывок',
+    w_swampSkip1:'Ты завяз в болоте — пропускаешь ход (', w_swampSkip2:' осталось).',
+    ach_first:'Первый выход!', ach_combo:'Серия из 10 быстрых ходов!', ach_explorer:'Разведал >=150 клеток!', ach_speed:'Победа за 90 секунд!',
+    achUnlock:'🏅 Достижение: ',
+    pausedTitle:'⏸ ПАУЗА', btnResume:'Продолжить (P)', btnPause:'⏸',
     w_dropChestTrap:'Клад остался на месте ранения.', w_noBombs:'Нет бомб! Найди арсенал.',
     w_wall:'Стена!', w_dashCd:'Рывок ещё не готов.', w_dashWall:'За стеной прохода нет — рывок не прошёл.', w_dash:'Рывок!',
     w_swamp:'Болото! Ноги увязли — пропускаешь ', w_swamp2:' ход', w_swamp3:' хода',
@@ -195,14 +237,15 @@ const I18N = {
   en: {
     hudHealth:'Health', hudBombs:'Bombs', hudChest:'Chest', hudKey:'Key',
     hudLevel:'Level', hudMoves:'Moves', hudTime:'Time',
-    logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart',
+    logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart · P — pause',
     statusStart:'Find the chest and carry it out through the exit.', title:'labyrinth',
     leg:'<span>🧙 player</span><span>💰 chest</span><span>🚩 exit</span><span>🗝️ key</span><span>💉 hospital</span><span>📦 arsenal</span><span>🌀 lake</span><span>🕳 hole</span><span>🪷 swamp</span><span>🐻 bear</span><span>⚠️ trap</span><span>🔥 fire</span><span>🧟 zombie</span><span>👮 shooter</span><span>🥷 boss</span><span><span class="k">B</span> — destroy wall · <span class="k">R</span> — restart</span>',
     btnRestart:'Restart (R)', btnReplay:'Play again',
     helpTitle:'Help',
     help1:'<b>Goal:</b> find the chest 💰, pick it up and carry it through the exit 🚩.',
     help2:'<b>Controls:</b> arrows / WASD — move · <span class="k">Shift</span>+arrow — dash one cell · <span class="k">B</span> — bomb (wall) · <span class="k">R</span> — restart · <span class="k">H</span> — help',
-    help3:'<b>Special cells:</b> 💉 hospital and 📦 arsenal restore health and bombs · 🌀 lake carries you every 2s · 🕳 hole drops you out of another hole · 🪷 swamp — keeps you for 3 moves · ⚠️ trap hurts · 🐻 bear moves after your turn · 🥷 hunter-bosses always know where you are and hunt you.',
+    help3:'<b>Special cells:</b> 💉 hospital and 📦 arsenal restore health and bombs · 🌀 lake carries you every 2s · 🕳 hole drops you out of another hole · 🪷 swamp — keeps you for 3 moves · ⚠️ trap hurts · 🐻 bear, 🧟 zombie, 👮 shooter and 🥷 boss move on their own timers (the boss always knows where you are).',
+    help4:'<b>More:</b> <span class="k">P</span> — pause · fast consecutive moves build a <b>combo score</b> · on touch devices use the on-screen pad · maze seed: <span class="k">?seed=123</span> or <span class="k">?seed=daily</span>.',
     w_river:'The lake carries you away.', w_hole:'Hole — drop! You exit from another hole.',
     w_arsenal:'Arsenal! Health and bombs restored (5).', w_hospital:'Hospital! Health restored.',
     w_trap:'Trap! You got hurt. Health: ', w_trapSafe:'Careful — there was a trap here, but you did not trigger it.',
@@ -212,6 +255,11 @@ const I18N = {
     w_bear:'A bear caught you! Hurt. Health: ', w_zombie:'A zombie bit you! Health: ',
     w_boss:'The hunter-boss shot you! Health: ', w_bossMelee:'The hunter-boss caught you! Heavy wound. Health: ',
     w_shooter:'The shooter wounded you! Health: ', w_dropChest:'The chest dropped and stayed here.',
+    w_dropChestBack:'The chest returned to its original cell.', hudScore:'Score', hudCombo:'Combo', hudDash:'Dash',
+    w_swampSkip1:'You are stuck in the swamp — skipping a move (', w_swampSkip2:' left).',
+    ach_first:'First escape!', ach_combo:'10-move streak!', ach_explorer:'Explored >=150 cells!', ach_speed:'Win in 90 seconds!',
+    achUnlock:'🏅 Achievement: ',
+    pausedTitle:'⏸ PAUSED', btnResume:'Resume (P)', btnPause:'⏸',
     w_dropChestTrap:'The chest stayed where you were hurt.', w_noBombs:'No bombs! Find an arsenal.',
     w_wall:'Wall!', w_dashCd:'Dash not ready.', w_dashWall:'No opening ahead — dash failed.', w_dash:'Dash!',
     w_swamp:'Swamp! Your feet are stuck — you skip ', w_swamp2:' move', w_swamp3:' moves',
@@ -253,7 +301,43 @@ function rand(max){ return Math.floor(Math.random()*max); }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rand(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]; // вверх, вниз, влево, вправо
 const W = 20, H = 20;
-const SAVE_KEY = 'labyrinth.save';
+
+// ========== Конфиг (все магические числа баланса — в одном месте) ==========
+const CFG = {
+  MAX_HEALTH: 5, MAX_BOMBS: 5, LEVEL_TIME: 300,        // 5 минут на уровень
+  MOVE_CD: 150, DASH_CD: 1500,                          // мс между ходами / рывком
+  FOG_RADIUS: 3, VIEW: 10, CS: 56,                      // туман BFS, окно камеры
+  SWAMP_SKIPS: 3, BOSS_AIM_DIST: 3,                     // болото, дальность босса
+  BEAR_MS: 1500, ZOMBIE_MS: 1500, SHOOTER_MS: 2000, BOSS_MS: 1200, RIVER_MS: 2000,
+  COMBO_WINDOW: 900, COMBO_BONUS: 5, LOW_TIME: 30,      // комбо-окно мс, бонус за ход комбо, « мало времени »
+};
+// ========== Сидированный RNG (mulberry32) ==========
+// Одинаковый сид (?seed=123 или ?seed=daily) даёт повторяемый лабиринт.
+// Без сида — как раньше, случайное каждый запуск.
+function mulberry32(a){ return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+let _seed = NaN;
+try{ const qs = new URLSearchParams((typeof location!=='undefined' && location.search) || ''); const sv = qs.get('seed'); if(sv==='daily'){ const d=new Date(); _seed = d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); } else if(sv) _seed = Number(sv); }catch(_){}
+const rng = Number.isFinite(_seed) ? mulberry32(_seed|0) : Math.random;
+function rand(max){ return Math.floor(rng()*max); }
+// ========== Единый BFS по клеткам (заменил 4 дубля: cellCount/reachable/nextStepTo/computeVisibility) ==========
+// passable(r,c) — клетка проходима; maxDist — обрубить поиск на этой глубине.
+function bfs(start, passable, maxDist){
+  const dist = Array.from({length:H},()=>Array(W).fill(-1));
+  const prev = Array.from({length:H},()=>Array(W).fill(null));
+  const q = [start]; dist[start[0]][start[1]] = 0;
+  for(let qi=0; qi<q.length; qi++){
+    const [r,c] = q[qi];
+    if(maxDist!=null && dist[r][c]>=maxDist) continue;
+    for(let d=0;d<4;d++){
+      if(wall[r][c][d]) continue;
+      const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
+      if(nr<0||nr>=H||nc<0||nc>=W||dist[nr][nc]!==-1) continue;
+      if(!passable(nr,nc)) continue;
+      dist[nr][nc]=dist[r][c]+1; prev[nr][nc]=[r,c]; q.push([nr,nc]);
+    }
+  }
+  return { dist, prev };
+}
 
 // ========== Звук (WebAudio, без файлов) ==========
 let actx = null;
@@ -282,6 +366,8 @@ function sfx(type){
       win:    [880,'sine',   .35,.35],
       lose:   [90, 'sawtooth',.4,.40],
       aim:    [500,'sine',   .08,.15],
+      tick:   [900,'square', .05,.18],
+      ach:    [750,'sine',   .18,.28],
     }[type];
     if(!P) return;
     const [freq,wave,dur,vol] = P;
@@ -332,7 +418,11 @@ function updateHUD(){
   hudKey.textContent = carryingKey ? '✔' : '✖';
   hudLevel.textContent = level;
   hudMoves.textContent = moves;
+  const stEl = document.getElementById('hud-score'); if(stEl) stEl.textContent = score;
+  const cbEl = document.getElementById('hud-combo'); if(cbEl) cbEl.textContent = 'x' + Math.max(1, combo);
+  const dEl = document.getElementById('hud-dash'); if(dEl){ const ready = Date.now() >= dashUntil; dEl.textContent = ready ? '⚡' : '·'; dEl.className = ready ? 'ready' : ''; }
   hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + t('secs');
+  if(hudTime.classList && hudTime.classList.toggle) hudTime.classList.toggle('low', timeLeft <= CFG.LOW_TIME && timeLeft > 0);
 }
 
 function activeTarget(){
@@ -362,7 +452,7 @@ function directionToTarget(){
 }
 
 // ========== Состояние ==========
-let wall, player, chest, exitPos, keyPos, river=[], lakes=[], holes=[], arsenal=[], hospital,
+let wall, player, chest, exitPos, keyPos, lakes=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], swamps=[], bosses=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null, bossTimerId = null,
     visGrid = [], shooterAim = new Set(), bossAim = new Set();
@@ -370,16 +460,23 @@ let skipMove = 0; // сколько ходов пропущено из-за бо
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
 let boom = null; // взрыв стены: {r,c, t0}
 let dashFlash = null; // след рывка: {r,c, t0}
-const LEVEL_TIME = 300; // секунд на уровень (5 минут)
-const SWAMP_SKIPS = 3; // сколько ходов болото задерживает (пропуск ходов)
-const BOSS_AIM_DIST = 3; // дальность стрельбы охотника-босса
+const LEVEL_TIME = CFG.LEVEL_TIME; // секунд на уровень
+const SWAMP_SKIPS = CFG.SWAMP_SKIPS; // сколько ходов болото задерживает
+const BOSS_AIM_DIST = CFG.BOSS_AIM_DIST; // дальность стрельбы охотника-босса
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
-let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
+let spd = 35;           // скорость lerp камеры
 let animFrom = null;    // логическая клетка-старт визуальной анимации
 let hurtUntil = 0;      // временной таймстамп конца красной вспышки при уроне
 let dashUntil = 0;      // кулдаун рывка (мс)
 let explored = []; // карта-память: разведанные клетки
+// --- Новые фичи: очки/комбо/пауза/частицы/достижения ---
+let paused = false;       // пауза (P/Esc)
+let score = 0, combo = 0, comboUntil = 0, tookDamage = false; // очки, серия быстрых ходов, урон на уровне
+let parts = [];           // частицы: {x,y,vx,vy,life,color,size}
+let shake = 0;            // тряска камеры (амплитуда px, затухает)
+let stats = loadStats();  // персистентные достижения {wins, bestCombo, exploredMax, speedrun, unlocked[]}
+if(!Array.isArray(stats.unlocked)) stats.unlocked = [];
 
 let msgTimer = null; // таймер автоскрытия всплывающего сообщения
 function msg(s){
@@ -392,32 +489,76 @@ function info(s){ logEl.textContent = s; }
 
 // Урон: триггерит красную вспышку + HUD-обновление. health-- вызывается отдельно.
 function hurt(){ hurtUntil = Date.now() + 350; updateHUD(); }
+// --- Достижения (hash в localStorage) ---
+function loadStats(){
+  try{ const v = localStorage.getItem('labyrinth.stats'); const s = v ? JSON.parse(v) : null; if(s && typeof s==='object') return s; }catch(_){}
+  return { wins:0, bestCombo:0, exploredMax:0, speedrun:false, unlocked:[] };
+}
+function saveStats(){ try{ localStorage.setItem('labyrinth.stats', JSON.stringify(stats)); }catch(_){} }
+function countExplored(){ let n=0; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(explored[r] && explored[r][c]) n++; return n; }
+const ACH = [
+  { id:'first',    name:()=>t('ach_first'),    check:()=> stats.wins>=1 },
+  { id:'combo10',  name:()=>t('ach_combo'),    check:()=> stats.bestCombo>=10 },
+  { id:'explorer', name:()=>t('ach_explorer'), check:()=> stats.exploredMax>=150 },
+  { id:'speedrun', name:()=>t('ach_speed'),    check:()=> !!stats.speedrun },
+];
+function checkAchievements(){
+  for(const a of ACH){
+    if(stats.unlocked.includes(a.id)) continue;
+    try{ if(a.check()){ stats.unlocked.push(a.id); msg(t('achUnlock')+a.name()); sfx('ach'); saveStats(); } }catch(_){}
+  }
+}
+// Единая точка урона: вызывается из всех источников (ловушка, огонь, медведь, зомби, стрелок, босс).
+// Правила: -1 (или -2 вплотную), встряска, частицы, и (главное) сброс клада ТОЛЬКО при здоровье <3.
+function damagePlayer(amount, msgKey){
+  health -= amount; tookDamage = true; hurt(); shake = 6; burst(player[0], player[1], '#e63946', 10);
+  msg(t(msgKey) + health);
+  if(carrying && health <= 2){
+    carrying = false;
+    msg(t(msgKey) + health + ' · ' + t('w_dropChestBack'));
+  }
+  if(health <= 0) endLose();
+}
+// --- Частицы (взрывы, победы, попадания) ---
+function burst(r, c, color, n){
+  const x = C + CS/2 + (c - (drawPosSafe()[1]))*CS, y = C + CS/2 + (r - (drawPosSafe()[0]))*CS;
+  for(let i=0;i<n;i++){
+    const ang = Math.random()*Math.PI*2, sp = 40 + Math.random()*120;
+    parts.push({ x, y, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp, life: 350+Math.random()*400, t0: performance.now(), color, size: 2+Math.random()*4 });
+  }
+  if(parts.length>240) parts = parts.slice(-240);
+}
+function drawPosSafe(){ try{ return drawPos(); }catch(_){ return player||[0,0]; } }
+function updatePartsRender(dtMs){
+  const now = performance.now();
+  for(let i=parts.length-1;i>=0;i--){
+    const p = parts[i]; const age = now - p.t0;
+    if(age > p.life){ parts.splice(i,1); continue; }
+    const k = age/p.life;
+    ctx.globalAlpha = 1-k;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x + p.vx*age/1000 - p.size/2, p.y + p.vy*age/1000 - p.size/2, p.size, p.size);
+    ctx.globalAlpha = 1;
+  }
+}
+function addScore(n){ score += n; }
 
 // ========== Генерация лабиринта ==========
 // wall[r][c][d] = стена на север/юг/запад/восток. Края всегда стена. Связность гарантирована.
 function genWalls(){
   const w = Array.from({length:H}, () => Array.from({length:W}, () => [true,true,true,true]));
   for(let r=0;r<H;r++) for(let c=0;c<W;c++){
-    w[r][c][1] = (r===H-1) || Math.random()<0.30; // низ
-    w[r][c][3] = (c===W-1) || Math.random()<0.30; // право
+    w[r][c][1] = (r===H-1) || rng()<0.30; // низ (rng: seeded, если задан ?seed)
+    w[r][c][3] = (c===W-1) || rng()<0.30; // право
     if(r>0) w[r][c][0] = w[r-1][c][1];
     if(c>0) w[r][c][2] = w[r][c-1][3];
   }
   return w;
 }
-// Достижимость всех клеток из стартовой (для проверки связности).
+// Достижимость всех клеток из стартовой (для проверки связности) — единый BFS.
 function cellCount(){
-  const mark = Array.from({length:H},()=>Array(W).fill(false));
-  const st=[[0,0]]; mark[0][0]=true; let n=1;
-  while(st.length){
-    const [r,c]=st.pop();
-    for(let d=0;d<4;d++){
-      if(wall[r][c][d]) continue;
-      const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
-      if(nr<0||nr>=H||nc<0||nc>=W||mark[nr][nc]) continue;
-      mark[nr][nc]=true; n++; st.push([nr,nc]);
-    }
-  }
+  const { dist } = bfs([0,0], ()=>true);
+  let n=0; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(dist[r][c]!==-1) n++;
   return n;
 }
 function ensureConnected(){
@@ -443,18 +584,8 @@ function nd(dr,dc){ // направление от вектора
   if(dr===-1) return 0; if(dr===1) return 1; if(dc===-1) return 2; return 3;
 }
 function reachable(){
-  const mark = Array.from({length:H},()=>Array(W).fill(false));
-  const st=[[0,0]]; mark[0][0]=true;
-  while(st.length){
-    const [r,c]=st.pop();
-    for(let d=0;d<4;d++){
-      if(wall[r][c][d]) continue;
-      const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
-      if(nr<0||nr>=H||nc<0||nc>=W||mark[nr][nc]) continue;
-      mark[nr][nc]=true; st.push([nr,nc]);
-    }
-  }
-  return mark;
+  const { dist } = bfs([0,0], ()=>true);
+  return dist.map(row => row.map(d => d!==-1));
 }
 
 // ========== Инициализация ==========
@@ -550,6 +681,7 @@ function clearAllTimers(){
 function clearAims(){ shooterAim.clear(); bossAim.clear(); }
 function init(){
   overlay.hidden = true;
+  try{ const pe=document.getElementById('pause'); if(pe) pe.hidden=true; }catch(_){} 
   clearAllTimers();
   clearAims();
   shots = [];
@@ -580,7 +712,7 @@ function init(){
   exitPos = cells[1];
   chest = cells[2];
   keyPos = cells[16];
-  river = [];
+  // (river удалён — не использовался)
   holes = cells.slice(7,11);
   arsenal = cells.slice(11,13);
   hospital = cells[13];
@@ -608,6 +740,9 @@ function init(){
   carryingKey = false;
   over = false;
   aiming = false;
+  paused = false;
+  score = 0; combo = 0; comboUntil = 0; tookDamage = false;
+  parts = []; shake = 0;
   skipMove = 0;
   moves = 0;
   timeLeft = LEVEL_TIME;
@@ -618,59 +753,27 @@ function init(){
   bestLine();
   info(t('w_reset1') + level + t('w_reset1b'));
   timerId = setInterval(() => {
-    if (over) return;
+    if (over || paused) return;
     timeLeft--;
+    if(timeLeft <= 10 && timeLeft > 0) sfx('tick');
     updateHUD();
     if (timeLeft <= 0) { timeLeft = 0; endTimeout(); }
   }, 1000);
   // медведи ходят независимо от игрока: каждые 1.5с
-  bearTimerId = setInterval(()=>{ if(!over) bearTurn(); }, 1500);
+  bearTimerId = setInterval(()=>{ if(!over && !paused) bearTurn(); }, CFG.BEAR_MS);
   // зомби ходят медленно, каждые 1.5с
-  zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 1500);
+  zombieTimerId = setInterval(()=>{ if(!over && !paused) zombieTurn(); }, CFG.ZOMBIE_MS);
   // стрелки ходят и стреляют, каждые 2с
-  shooterTimerId = setInterval(()=>{ if(!over) shooterTurn(); }, 2000);
+  shooterTimerId = setInterval(()=>{ if(!over && !paused) shooterTurn(); }, CFG.SHOOTER_MS);
   // охотники-боссы знают позицию игрока и неотступно идут к нему каждые 1.2с
-  bossTimerId = setInterval(()=>{ if(!over) bossTurn(); }, 1200);
+  bossTimerId = setInterval(()=>{ if(!over && !paused) bossTurn(); }, CFG.BOSS_MS);
 }
 
 // ========== Сохранение партии (localStorage) ==========
-function saveGame(){
-  const state = {
-    player, chest, exitPos, river, lakes, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters, swamps, bosses, skipMove
-  };
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
-}
-function loadGame(){
-  let data = null;
-  try{ const raw = localStorage.getItem(SAVE_KEY); data = raw ? JSON.parse(raw) : null; }
-  catch(_){ return false; }
-  if(!data) return false;
-  init(); // стены генерируются заново, остальное переопределяется сохранением
-  player = data.player; chest = data.chest; exitPos = data.exitPos;
-  river = data.river; lakes = data.lakes || (data.lakes ? data.lakes : []);
-  holes = data.holes; arsenal = data.arsenal;
-  hospital = data.hospital; trap = data.trap; bears = data.bears;
-  health = data.health; bombs = data.bombs; carrying = data.carrying;
-  carryingKey = data.carryingKey; keyPos = data.keyPos;
-  level = data.level; moves = data.moves; timeLeft = data.timeLeft; over = data.over;
-  explored = data.explored;
-  fire = data.fire || [];
-  zombies = data.zombies || [];
-  shooters = data.shooters || [];
-  bosses = data.bosses || [];
-  swamps = data.swamps || [];
-  skipMove = data.skipMove || 0;
-  markExplored();
-  render(); updateHUD();
-  return true;
-}
-function hasSave(){
-  try{ return !!localStorage.getItem(SAVE_KEY); }catch(_){ return false; }
-}
-function clearSave(){
-  try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
-}
+// БАГ ФИКС: прежняя saveGame() сохраняла состояние БЕЗ стен (wall), а loadGame()
+// эти же стены регенерировал заново — после перезагрузки уровень ломался.
+// Система «продолжить партию» удалена целиком: остаются только labyrinth.best
+// (рекорды), labyrinth.lang и labyrinth.stats (достижения) — они консистентны.
 
 function inList(cell, list){ // cell присутствует в list?
   for(const [r,c] of list) if(r===cell[0] && c===cell[1]) return true;
@@ -678,20 +781,9 @@ function inList(cell, list){ // cell присутствует в list?
 }
 // Видимость по проходам (не сквозь стены), радиус 3 от игрока.
 function computeVisibility(){
-  visGrid = Array.from({length:H},()=>Array(W).fill(false));
-  const st=[[player[0],player[1],0]];
-  visGrid[player[0]][player[1]]=true;
-  while(st.length){
-    const [r,c,d]=st.pop();
-    if(d>=3) continue;
-    for(let dd=0;dd<4;dd++){
-      if(wall[r][c][dd]) continue;
-      const nr=r+DIRS[dd][0], nc=c+DIRS[dd][1];
-      if(nr<0||nr>=H||nc<0||nc>=W||visGrid[nr][nc]) continue;
-      visGrid[nr][nc]=true;
-      st.push([nr,nc,d+1]);
-    }
-  }
+  // Туман: BFS по проходам на радиус FOG_RADIUS, стены не пропускают.
+  const { dist } = bfs([player[0],player[1]], ()=>true, CFG.FOG_RADIUS);
+  visGrid = dist.map(row => row.map(d => d!==-1));
 }
 function visible(r,c){ // видна ли клетка (в радиусе 3, не сквозь стены)
   return visGrid[r][c];
@@ -712,20 +804,24 @@ function drawPos(){
   return [playerRow, playerCol];
 }
 // ========== Движение и ходы ==========
-let moveLockUntil = 0; // кулдаун хода: не чаще раза в 300мс
+let moveLockUntil = 0; // кулдаун хода: не чаще раза в CFG.MOVE_CD мс
 function tryMove(dr,dc){
-  if(over) return;
+  if(over || paused) return;
   const now = Date.now();
   if(now < moveLockUntil) return; // слишком часто — игнор
-  moveLockUntil = now + 150;
   if(skipMove > 0){ // завяз в болоте — пропуск хода, остаток задержки
+    moveLockUntil = now + CFG.MOVE_CD;
     skipMove--;
-    msg(t('w_swampSkip1')+skipMove+t('w_swampSkip2'));
+    msg(t('w_swamp') + skipMove + t('w_swamp2'));
     render();
     return;
   }
   const r=player[0], c=player[1];
-  if(wall[r][c][nd(dr,dc)]){ msg(t('w_wall')); sfx('wall'); render(); return; }
+  if(wall[r][c][nd(dr,dc)]){
+    combo = 0; comboUntil = 0; // стена обнуляет серию — держи темп
+    msg(t('w_wall')); sfx('wall'); render(); return;
+  }
+  moveLockUntil = now + CFG.MOVE_CD;
   animFrom = [r,c];
   camR=camC=0; moving=true;
   player = [r+dr, c+dc];
@@ -734,12 +830,18 @@ function tryMove(dr,dc){
   sfx('step');
   onEnter(player);
   if(!over) { moves++; }
-  saveGame();
+  // --- комбо: серия быстрых ходов (окно CFG.COMBO_WINDOW) ---
+  if(now <= comboUntil) combo++; else combo = 1;
+  comboUntil = now + CFG.COMBO_WINDOW;
+  if(combo>0) addScore(CFG.COMBO_BONUS * combo);
+  if(combo > stats.bestCombo){ stats.bestCombo = combo; saveStats(); }
+  if(combo===10) checkAchievements();
+  if(moves % 25 === 0){ stats.exploredMax = Math.max(stats.exploredMax, countExplored()); saveStats(); checkAchievements(); }
   render();
 }
 // Рывок (Shift+направление): прыжок через 1 клетку, обе должны быть проходимыми. Кулдаун 1.5с.
 function dash(dr,dc){
-  if(over) return;
+  if(over || paused) return;
   const now = Date.now();
   if(now < dashUntil){ msg(t('w_dashCd')); return; }
   const r=player[0], c=player[1];
@@ -749,10 +851,10 @@ function dash(dr,dc){
   // обе клетки на пути свободны
   player=[r2,c2];
   markExplored(); computeVisibility();
-  dashUntil = now + 1500;
+  dashUntil = now + CFG.DASH_CD;
   dashFlash = { r: player[0], c: player[1], t0: now };
   sfx('step');
-  msg(t('w_dash')); saveGame(); render();
+  msg(t('w_dash')); render();
 }
 // ===== Озёра: произвольной формы, внутри «крутит» течением =====
 function lakeOf(r,c){ for(const L of lakes) for(const [cr,cc] of L.cells) if(cr===r&&cc===c) return L; return null; }
@@ -791,7 +893,7 @@ function lakeFlow(r,c){
 }
 // Автоснос каждые ~2с: пока игрок в озере, его крутит течением.
 function lakeTick(){
-  if(over){ if(riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; } return; }
+  if(over || paused){ if(over && riverTimerId){ clearInterval(riverTimerId); riverTimerId=null; } return; }
   const [playerRow, playerCol]=player;
   const move = lakeFlow(playerRow,playerCol);
   if(!move){
@@ -804,7 +906,7 @@ function lakeTick(){
   sfx('river');
   markExplored();
   msg(t('w_river'));
-  saveGame(); render();
+  render();
 }
 
 function onEnter(cell){
@@ -821,28 +923,21 @@ function onEnter(cell){
     }
     // запускаем автоснос каждые 2с, пока игрок в озере
     if(!riverTimerId){
-      riverTimerId = setInterval(lakeTick, 2000);
+      riverTimerId = setInterval(lakeTick, CFG.RIVER_MS);
     }
-    saveGame(); render();
+    render();
     return;
   }
   if(inList(cell, holes)){ sfx('hole'); msg(t('w_hole')); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
   if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg(t('w_arsenal')); return; }
   if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg(t('w_hospital')); return; }
   if(inList(cell, trap)){
-    if(rand(2)===0){
-      sfx('bear');
-      health--;
-      hurt();
-      msg(t('w_trap')+health);
-      if(carrying && health<=2){ carrying=false; msg(t('w_dropChestTrap')); saveGame(); }
-      if(health<=0) endLose();
-    } else msg(t('w_trapSafe'));
+    if(rand(2)===0){ sfx('bear'); damagePlayer(1,'w_trap'); } else msg(t('w_trapSafe'));
     return;
   }
-  if(inList(cell, fire)){ sfx('bear'); health--; hurt(); msg(t('w_fire')+health); if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); } if(health<=0) endLose(); return; }
-  if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg(t('w_key')); keyPos=null; saveGame(); }
-  if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg(t('w_chest')); saveGame(); }
+  if(inList(cell, fire)){ sfx('bear'); damagePlayer(1,'w_fire'); return; }
+  if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg(t('w_key')); keyPos=null; }
+  if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg(t('w_chest')); }
   if(cell[0]===exitPos[0]&&cell[1]===exitPos[1]){
     if(carrying && carryingKey && health>0) endWin();
     else if(carrying && !carryingKey) msg(t('w_door'));
@@ -852,7 +947,7 @@ function onEnter(cell){
     sfx('hole');
     skipMove = SWAMP_SKIPS; // задержка на несколько ходов
     msg(t('w_swamp')+SWAMP_SKIPS+t('w_swamp3'));
-    saveGame(); render();
+    render();
   }
 }
 function nextHole(cell){
@@ -881,9 +976,7 @@ function bearTurn(){
     if(visGrid[move[0]][move[1]]) sfx('esStep'); // шаг медведя слышен, если он на виду
     if(bear[0]===player[0]&&bear[1]===player[1]){
       sfx('bear');
-      health--; hurt(); msg(t('w_bear')+health);
-      if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); }
-      if(health<=0) endLose();
+      damagePlayer(1,'w_bear');
     }
   }
 }
@@ -905,9 +998,7 @@ function zombieTurn(){
     if(visGrid[best[0]][best[1]]) sfx('esStep'); // шаг зомби слышен, если он на виду
     if(Math.abs(z[0]-player[0])+Math.abs(z[1]-player[1]) === 1){
       sfx('bear');
-      health--; hurt(); msg(t('w_zombie')+health);
-      if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); }
-      if(health<=0) endLose();
+      damagePlayer(1,'w_zombie');
     }
   }
 }
@@ -925,9 +1016,7 @@ function bossTurn(){
       if(bossAim.has(key)){
         // прицелился в прошлый такт — выстрел
         sfx('danger'); sfx('shoot');
-        health--; hurt(); msg(t('w_boss')+health);
-        if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); }
-        if(health<=0) endLose();
+        damagePlayer(1,'w_boss');
         bossAim.delete(key);
         shots.push({ x1:b[0], y1:b[1], x2:player[0], y2:player[1], t0:Date.now() });
       } else {
@@ -967,34 +1056,17 @@ function hasClearShot(r1,c1,r2,c2){
 }
 function hurtPlayer(){
   sfx('bear');
-  health-=2; hurt(); msg(t('w_bossMelee')+health);
-  if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); }
-  if(health<=0) endLose();
+  damagePlayer(2,'w_bossMelee');
 }
 // Первый шаг кратчайшего пути BFS из (r1,c1) в (r2,c2). Возвращает [r,c] или null.
 function nextStepTo(r1,c1,r2,c2){
   if(r1===r2&&c1===c2) return null;
-  const prev = new Map([[r1+','+c1, null]]);
-  const q = [[r1,c1]];
-  while(q.length){
-    const [r,c] = q.shift();
-    if(r===r2&&c===c2) break;
-    for(let d=0;d<4;d++){
-      const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
-      const k=nr+','+nc;
-      if(nr<0||nr>=H||nc<0||nc>=W||wall[r][c][d]||prev.has(k)) continue;
-      prev.set(k, [r,c]);
-      q.push([nr,nc]);
-    }
-    if(r===r2&&c===c2) break;
-  }
-  if(!prev.has(r2+','+c2)) return null; // цель недостижима
-  // реконструировать путь от цели к старту, вернуть первый шаг от старта
-  const path = [[r2,c2]];
-  let key = r2+','+c2;
-  while(prev.get(key)){ const p = prev.get(key); path.push(p); key = p[0]+','+p[1]; }
-  path.reverse(); // теперь [старт, шаг1, ..., цель]
-  return path[1] || null;
+  const { prev } = bfs([r1,c1], ()=>true);
+  if(!prev[r2][c2]) return null; // цель недостижима
+  // идём от цели назад к старту, первый шаг — сосед старта
+  let node = [r2,c2];
+  while(prev[node[0]][node[1]] && !(prev[node[0]][node[1]][0]===r1 && prev[node[0]][node[1]][1]===c1)) node = prev[node[0]][node[1]];
+  return node; // node — первый шаг от старта (его prev = start)
 }
 
 // Стрелок: замечает игрока на дистанции ≤3 → целится (🏹) → стреляет.
@@ -1010,9 +1082,7 @@ function shooterTurn(){
         // уже целится в прошлый такт — повторяющийся сигнал опасности, затем выстрел
         sfx('danger');
         sfx('shoot');
-        health--; hurt(); msg(t('w_shooter')+health);
-        if(carrying && health<=2){ carrying=false; msg(t('w_dropChest')); saveGame(); }
-        if(health<=0) endLose();
+        damagePlayer(1,'w_shooter');
         shooterAim.delete(key);
         // анимация летящей пули (клеточные координаты)
         shots.push({ x1:sr, y1:sc, x2:player[0], y2:player[1], t0:Date.now() });
@@ -1036,7 +1106,7 @@ function shooterTurn(){
 
 // Бомба взрывает стену в заданном направлении (игрок не двигается).
 function bomb(dr,dc){
-  if(over) return;
+  if(over || paused) return;
   if(bombs<=0){ msg(t('w_noBombs')); return; }
   const r=player[0], c=player[1];
   const d=nd(dr,dc);
@@ -1047,7 +1117,7 @@ function bomb(dr,dc){
       bombs--;
       sfx('wall');
       msg(t('w_stone'));
-      saveGame(); render();
+      render();
       return;
     }
     wall[r][c][d]=false;
@@ -1056,7 +1126,8 @@ function bomb(dr,dc){
     sfx('bomb');
     msg(t('w_boom')+t('dir')[d]+t('w_boom2')+bombs);
     boom = { r: target[0], c: target[1], t0: Date.now() };
-    saveGame();
+    burst(target[0], target[1], '#ff9f43', 14); shake = 4;
+    
     computeVisibility(); // стена ломается — пересчитываем зону видимости
   } else msg(t('w_noWall'));
   render();
@@ -1068,8 +1139,8 @@ function loadBest(){
   catch(_){ return {level:0,time1:null}; }
 }
 function bestText(b){
-  let s = 'уровень <b>'+b.level+'</b>';
-  if(b.time1!==null) s += ' · лучшее время L1 <b>'+b.time1.toFixed(1)+'</b>с';
+  let s = t('record')+b.level+t('record2');
+  if(b.time1!==null) s += t('bestL1')+b.time1.toFixed(1)+'</b>'+t('secs');
   return s;
 }
 function saveBest(){
@@ -1092,35 +1163,45 @@ function endWin(){
   over=true; level++;
   moving=false; camR=camC=1;
   sfx('win');
-  saveGame();
+  // --- финал: очки и достижения ---
+  addScore(1000); // победа
+  const winTime = LEVEL_TIME - timeLeft;
+  if(winTime <= 90 && level-1===1) stats.speedrun = true;
+  stats.wins++;
+  stats.exploredMax = Math.max(stats.exploredMax, countExplored());
+  saveStats();
+  burst(player[0], player[1], '#ffd166', 40);
+  
   saveBest();
   msg(t('w_winMsg')); info(t('w_reset1') + level + t('w_newLevelR'));
   clearAllTimers();
   clearAims();
   const bBest = bestText(loadBest());
+  checkAchievements();
   showOverlay(t('winTitle'), '#ffd166',
     t('w_winStats') + moves + t('w_winStats2') + (LEVEL_TIME - timeLeft) + t('secs') +
     t('w_newLevel') + level + t('w_newLevel2') +
-    (bBest ? '<br>Рекорд: ' + bBest : ''));
+    '<br>' + t('hudScore') + ': <b>' + score + '</b>' +
+    (bBest ? '<br>' + bBest : ''));
 }
 function endLose(){
   over=true; level=1;
   moving=false; camR=camC=1;
   sfx('lose');
-  saveGame();
+  
   msg(t('w_loseMsg')); info(t('w_R'));
   clearAllTimers();
   clearAims();
   showOverlay(t('loseTitle'), '#e63946',
     t('w_loseStats') + moves + t('w_timeStats') + (LEVEL_TIME - timeLeft) + t('secs') +
-    t('w_resetLevel'));
+    t('w_resetLevel') + '<br>' + t('hudScore') + ': <b>' + score + '</b>');
 }
 function endTimeout(){
   if (over) return;
   over = true;
   moving=false; camR=camC=1;
   sfx('lose');
-  saveGame();
+  
   clearAllTimers();
   clearAims();
   carrying = false; // клад при проигрыше не переносится
@@ -1132,8 +1213,8 @@ function endTimeout(){
 }
 
 // ========== Рендер (камера за игроком, он всегда в центре) ==========
-const VIEW = 10; // размер окна просмотра на экране (клеток)
-const CS = 56;
+const VIEW = CFG.VIEW; // размер окна просмотра на экране (клеток)
+const CS = CFG.CS;
 const N = VIEW * CS, C = N/2;
 // цвет подложки клетки по символу объекта
 const CELL_BG = {
@@ -1143,12 +1224,16 @@ const CELL_BG = {
 function render(){
   updateHUD();
   ctx.clearRect(0,0,N,N);
+  if(paused){ ctx.fillStyle='rgba(6,8,12,.45)'; ctx.fillRect(0,0,N,N); ctx.font='28px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#ffe9a8'; ctx.fillText(t('pausedTitle'), C, C); updatePartsRender(0); return; }
+  // тряска камеры
+  let shX=0, shY=0;
+  if(shake>0){ shX=(Math.random()-0.5)*shake; shY=(Math.random()-0.5)*shake; shake=Math.max(0, shake-0.8); }
   const drawP = drawPos(), drawR = drawP[0], drawC = drawP[1];
   const baseR = Math.round(drawR), baseC = Math.round(drawC);
   const r0 = Math.max(0, baseR - 4), r1 = Math.min(H-1, baseR + 5);
   const c0 = Math.max(0, baseC - 4), c1 = Math.min(W-1, baseC + 5);
-  const sx = r => C + (r - drawR) * CS; // экранная строка
-  const sc = c => C + (c - drawC) * CS; // экранный столбец
+  const sx = r => C + (r - drawR) * CS + shY; // экранная строка
+  const sc = c => C + (c - drawC) * CS + shX; // экранный столбец
 
   // Слой карты-памяти: разведанные клетки вне активной (видимой) зоны, затемнённые.
   for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
@@ -1300,6 +1385,9 @@ function render(){
     ctx.beginPath(); ctx.arc(bx, by, 12, 0, 7); ctx.stroke();
     drawEmoji(bossAim.has(b[0]+','+b[1]) ? '🎯' : '🥷', bx, by, 26);
   }
+  // частицы
+  updatePartsRender(16);
+  ctx.globalAlpha = 1;
 }
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
@@ -1352,6 +1440,29 @@ function frame(){
   requestAnimationFrame(frame);
 }
 
+// ========== Пауза (P/Esc) ==========
+const pauseEl = document.getElementById('pause');
+function togglePause(){
+  if(over) return;
+  paused = !paused;
+  if(pauseEl) pauseEl.hidden = !paused;
+  render();
+}
+function setupPad(){
+  // Кнопки по id, чтобы эмуляция без querySelectorAll не падала
+  const dirs = { 'pad-up':[-1,0], 'pad-down':[1,0], 'pad-left':[0,-1], 'pad-right':[0,1] };
+  for(const id in dirs){
+    const el = document.getElementById(id);
+    if(!el || !el.addEventListener) continue;
+    el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); _padDir = dirs[id]; if(aiming){ aiming=false; bomb(dirs[id][0], dirs[id][1]); } else tryMove(dirs[id][0], dirs[id][1]); });
+  }
+  const dsh = document.getElementById('pad-dash'); if(dsh && dsh.addEventListener) dsh.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(paused) return; const [dr,dc]=padDir(); dash(dr,dc); });
+  const bm = document.getElementById('pad-bomb'); if(bm && bm.addEventListener) bm.addEventListener('pointerdown', (e)=>{ e.preventDefault(); if(over || paused) return; if(bombs<=0){ msg(t('w_noBombs')); return; } aiming = true; sfx('aim'); msg(t('w_aim')); });
+  const pb = document.getElementById('pause-btn'); if(pb && pb.addEventListener) pb.addEventListener('click', togglePause);
+  const rb = document.getElementById('resume-btn'); if(rb && rb.addEventListener) rb.addEventListener('click', ()=>{ if(paused) togglePause(); });
+}
+let _padDir = [-1,0];
+function padDir(){ return _padDir; }
 // ========== Управление ==========
 const KEYMAP = {
   'ArrowUp':   [-1,0], 'KeyW':[-1,0],
@@ -1360,16 +1471,18 @@ const KEYMAP = {
   'ArrowRight':[0, 1], 'KeyD':[0, 1]
 };
 document.addEventListener('keydown', e=>{
-  if(e.code==='KeyR'){ clearSave(); init(); render(); return; }
+  if(e.code==='KeyP' || e.code==='Escape'){ togglePause(); return; }
+  if(e.code==='KeyR'){ init(); render(); return; }
   if(e.code==='KeyH'){ toggleHelp(); return; }
   const dir = KEYMAP[e.code];
   if(e.code==='KeyB'){
     if(over) return;
     if(bombs<=0){ msg(t('w_noBombs')); return; }
-    aiming = true; sfx('aim'); msg(t('w_aim')); saveGame(); return;
+    aiming = true; sfx('aim'); msg(t('w_aim')); return;
   }
   if(dir){
     e.preventDefault();
+    _padDir = dir;
     if(aiming){ aiming=false; bomb(dir[0],dir[1]); }
     else if(e.shiftKey){ dash(dir[0],dir[1]); }
     else tryMove(dir[0],dir[1]);
@@ -1380,6 +1493,8 @@ ovReplay.addEventListener('click', ()=>{ init(); render(); });
 
 applyI18n();
 setupLangButton();
+setupPad();
+if(pauseEl) pauseEl.hidden = true;
 init();
 requestAnimationFrame(frame);
   </script>
