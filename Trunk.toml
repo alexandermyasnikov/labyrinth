@@ -1,5 +1,6 @@
 [build]
 target = "index.html"
+public_url = "."  # относительные пути: GitHub Pages /labyrinth/ + локально
 
 [serve]
 port = 8080
