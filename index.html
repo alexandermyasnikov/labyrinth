@@ -163,7 +163,7 @@
       <p data-i18n="help1" data-html="1"><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p data-i18n="help2" data-html="1"><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
       <p data-i18n="help3" data-html="1"><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь, 🧟 зомби, 👮 стрелки и 🥷 босс ходят по своим таймерам.</p>
-      <p data-i18n="help4" data-html="1"><b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или <span class="k">?seed=daily</span>.</p>
+      <p data-i18n="help4" data-html="1"><b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или дата <span class="k">?seed=20261106</span>.</p>
     </div>
   </div>
   <div id="pad">
@@ -177,7 +177,7 @@
       <button id="pad-bomb" type="button" aria-label="Бомба">💣</button>
     </div>
   </div>
-  <footer><a href="https://github.com/alexandermyasnikov/labyrinth" target="_blank" rel="noopener">GitHub</a> · <a href="?seed=daily">сид дня</a> · <a href="?seed=123">сид 123</a></footer>
+  <footer><a href="https://github.com/alexandermyasnikov/labyrinth" target="_blank" rel="noopener">GitHub</a> · <a id="daily-link" href="?seed=">сид дня</a> · <a href="?seed=123">сид 123</a></footer>
   <div id="pause" hidden>
     <div id="pause-panel">
       <h2 data-i18n="pausedTitle">⏸ ПАУЗА</h2>
@@ -206,7 +206,7 @@ const I18N = {
     help1:'<b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.',
     help2:'<b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь',
     help3:'<b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь, 🧟 зомби, 👮 стрелки и 🥷 босс ходят по своим таймерам (босс всегда знает, где ты).',
-    help4:'<b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или <span class="k">?seed=daily</span>.',
+    help4:'<b>Прочее:</b> <span class="k">P</span> — пауза · быстрые ходы подряд дают <b>очки комбо</b> · на телефоне — кнопки на экране · сид лабиринта: <span class="k">?seed=123</span> или дата <span class="k">?seed=20261106</span>.',
     w_river:'Течение озера несёт тебя.', w_hole:'Дырка — провал! Ты выходишь из другой дырки.',
     w_arsenal:'Арсенал! Здоровье и бомбы восстановлены (5).', w_hospital:'Госпиталь! Здоровье восстановлено.',
     w_trap:'Ловушка! Ты ранен. Здоровье: ', w_trapSafe:'Осторожно — здесь была ловушка, но ты не сработал её.',
@@ -248,7 +248,7 @@ const I18N = {
     help1:'<b>Goal:</b> find the chest 💰, pick it up and carry it through the exit 🚩.',
     help2:'<b>Controls:</b> arrows / WASD — move · <span class="k">Shift</span>+arrow — dash one cell · <span class="k">B</span> — bomb (wall) · <span class="k">R</span> — restart · <span class="k">H</span> — help',
     help3:'<b>Special cells:</b> 💉 hospital and 📦 arsenal restore health and bombs · 🌀 lake carries you every 2s · 🕳 hole drops you out of another hole · 🪷 swamp — keeps you for 3 moves · ⚠️ trap hurts · 🐻 bear, 🧟 zombie, 👮 shooter and 🥷 boss move on their own timers (the boss always knows where you are).',
-    help4:'<b>More:</b> <span class="k">P</span> — pause · fast consecutive moves build a <b>combo score</b> · on touch devices use the on-screen pad · maze seed: <span class="k">?seed=123</span> or <span class="k">?seed=daily</span>.',
+    help4:'<b>More:</b> <span class="k">P</span> — pause · fast consecutive moves build a <b>combo score</b> · on touch devices use the on-screen pad · maze seed: <span class="k">?seed=123</span> or a date <span class="k">?seed=20261106</span>.',
     w_river:'The lake carries you away.', w_hole:'Hole — drop! You exit from another hole.',
     w_arsenal:'Arsenal! Health and bombs restored (5).', w_hospital:'Hospital! Health restored.',
     w_trap:'Trap! You got hurt. Health: ', w_trapSafe:'Careful — there was a trap here, but you did not trigger it.',
@@ -317,11 +317,11 @@ const CFG = {
   COMBO_WINDOW: 900, COMBO_BONUS: 5, LOW_TIME: 30,      // комбо-окно мс, бонус за ход комбо, « мало времени »
 };
 // ========== Сидированный RNG (mulberry32) ==========
-// Одинаковый сид (?seed=123 или ?seed=daily) даёт повторяемый лабиринт.
+// Одинаковый сид (?seed=123 или ?seed=20261106 — дата) даёт повторяемый лабиринт.
 // Без сида — как раньше, случайное каждый запуск.
 function mulberry32(a){ return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
 let _seed = NaN;
-try{ const qs = new URLSearchParams((typeof location!=='undefined' && location.search) || ''); const sv = qs.get('seed'); if(sv==='daily'){ const d=new Date(); _seed = d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); } else if(sv) _seed = Number(sv); }catch(_){}
+try{ const qs = new URLSearchParams((typeof location!=='undefined' && location.search) || ''); const sv = qs.get('seed'); if(sv) _seed = Number(sv); }catch(_){} // сид — просто число: ?seed=123 или ?seed=20261106 (дата)
 const rng = Number.isFinite(_seed) ? mulberry32(_seed|0) : Math.random;
 function rand(max){ return Math.floor(rng()*max); }
 // ========== Единый BFS по клеткам (заменил 4 дубля: cellCount/reachable/nextStepTo/computeVisibility) ==========
@@ -1578,6 +1578,7 @@ ovReplay.addEventListener('click', ()=>{ init(); render(); });
 
 applyI18n();
 setupLangButton();
+try{ const d=new Date(); const dl=document.getElementById('daily-link'); if(dl) dl.href='?seed='+d.getFullYear()+(d.getMonth()+1 < 10 ? '0' : '')+(d.getMonth()+1)+((d.getDate()<10?'0':'')+d.getDate()); }catch(_){} // сид дня = дата YYYYMMDD
 setupPad();
 if(pauseEl) pauseEl.hidden = true;
 init();
