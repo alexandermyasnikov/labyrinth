@@ -749,6 +749,23 @@ function init(){
   zombies = take(zombies);
   shooters = take(shooters);
   bosses = take(bosses);
+  // Гарантия: ключ и сундук — только на пустом поле (не озеро/болото/дырка/
+  // ловушка/огонь/арсенал/госпиталь). По индексам пула это и так верно,
+  // но проверяем инвариантом: если пересечение (будущие правки индексов) —
+  // переносим цель на первую свободную клетку пула.
+  {
+    const special = new Set([...trap, ...fire, ...holes, ...arsenal].map(c=>c[0]+','+c[1]));
+    special.add(hospital[0]+','+hospital[1]);
+    for(const L of lakes) for(const c of L.cells) special.add(c[0]+','+c[1]);
+    for(const c of swamps) special.add(c[0]+','+c[1]);
+    const freeFrom = (cur) => {
+      if(!special.has(cur[0]+','+cur[1])) return cur;
+      for(const c of cells) if(!special.has(c[0]+','+c[1]) && !(c[0]===player[0]&&c[1]===player[1]) && !(c[0]===exitPos[0]&&c[1]===exitPos[1])) return c;
+      return cur;
+    };
+    keyPos = freeFrom(keyPos);
+    chest = freeFrom(chest);
+  }
   health = 5;
   bombs = 5;
   carrying = false;
