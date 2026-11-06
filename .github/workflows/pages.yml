@@ -28,8 +28,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # публикуем index.html с корня; остальные файлы (specs) не нужны на сайте
-          path: '.'
+          # на сайт уходит только сама игра index.html
+          path: './index.html'
 
   deploy:
     needs: build
