@@ -1395,12 +1395,12 @@ function render(){
     ctx.fillStyle = frac > 0.6 ? '#58d68d' : frac > 0.3 ? '#f5c542' : '#e63946';
     ctx.fillRect(bx, by, bw*frac, bh);
   }
-  // шеврон компаса: статичный, на границе клетки игрока (не в соседней клетке),
+  // шеврон компаса: статичный, по центру соседней клетки (как изначально),
   // скрыт когда цель уже в тумане (dist <= FOG_RADIUS) — см. specs/research-compass.md
   {
     const { dir, dx, dy, dist } = directionToTarget();
     if(dir !== '🏆' && dist > CFG.FOG_RADIUS){
-      const off = CS/2 - 6; // внутри клетки игрока, у её края
+      const off = CS; // центр соседней клетки (первый шаг BFS)
       const px = C + CS/2 + dx*off, py = C + CS/2 + dy*off;
       ctx.save();
       ctx.globalAlpha = 0.85;
