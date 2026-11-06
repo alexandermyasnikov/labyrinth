@@ -28,9 +28,15 @@
   .hud .heart { color:#e63946; }
   .hud .seat { color:#f4a261; }
   #status {
-    min-height:22px; font-weight:600; color:#ffd166; text-align:center;
-    max-width:680px; text-shadow:0 1px 6px rgba(0,0,0,.5);
+    position:absolute; left:50%; top:12px; transform:translateX(-50%);
+    padding:8px 18px; border-radius:999px; font-weight:600; color:#ffd166;
+    background:rgba(14,17,23,.92); border:1px solid #2e3340;
+    box-shadow:0 6px 24px rgba(0,0,0,.5); white-space:nowrap;
+    max-width:92%; text-overflow:ellipsis; overflow:hidden;
+    opacity:0; transition:opacity .25s ease; z-index:5; pointer-events:none;
   }
+  #status.show { opacity:1; }
+  .game-wrap { position:relative; display:inline-block; }
   #log { min-height:18px; color:#9aa0ab; font-size:13px; text-align:center; max-width:680px; }
   #bestline { min-height:16px; color:#9aa0ab; font-size:12px; text-align:center; max-width:680px; }
   canvas {
@@ -72,7 +78,10 @@
 </head>
 <body>
   <h1>ЛАБИРИНТ</h1>
-  <div id="status">Найди сундук и вынеси его через выход.</div>
+  <div class="game-wrap">
+    <div id="status">Найди сундук и вынеси его через выход.</div>
+    <canvas id="cv" width="560" height="560"></canvas>
+  </div>
   <div id="log">Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново</div>
   <div id="bestline"></div>
   <div class="hud">
@@ -86,7 +95,6 @@
     <span>Компас: <b id="hud-compass">?</b></span>
     <span>Время: <b id="hud-time">--</b></span>
   </div>
-  <canvas id="cv" width="560" height="560"></canvas>
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
@@ -239,7 +247,13 @@ let dashUntil = 0;      // кулдаун рывка (мс)
 let dashDr=0, dashDc=0; // направление текущего рывка
 let explored = []; // карта-память: разведанные клетки
 
-function msg(s){ statusEl.textContent = s; }
+let msgTimer = null; // таймер автоскрытия всплывающего сообщения
+function msg(s){
+  statusEl.textContent = s;
+  statusEl.classList.add('show');
+  if (msgTimer) clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => statusEl.classList.remove('show'), 2600);
+}
 function info(s){ logEl.textContent = s; }
 
 // Урон: триггерит красную вспышку + HUD-обновление. health-- вызывается отдельно.
