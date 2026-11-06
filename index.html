@@ -88,7 +88,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌀 озеро</span><span>🕳 дырка</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
+    <span>🌀 озеро</span><span>🕳 дырка</span><span>🪤 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -97,7 +97,7 @@
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
+      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪤 болото — следующий ход пропускается · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🧱 каменные стены не взрываются.</p>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -217,9 +217,11 @@ function activeTarget(){
 
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], lakes=[], holes=[], arsenal=[], hospital,
-    trap=[], bears=[], fire=[], zombies=[], shooters=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
+    trap=[], bears=[], fire=[], zombies=[], shooters=[], swamps=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null,
     visGrid = [], shooterAim = new Set();
+let solidWalls = []; // невзрываемые стены (строки вида "r,c,d")
+let skipMove = false; // игрок завяз в болоте — следующий ход пропускает
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
 let boom = null; // взрыв стены: {r,c, t0}
 let dashFlash = null; // след рывка: {r,c, t0}
@@ -250,6 +252,23 @@ function genWalls(){
     if(c>0) w[r][c][2] = w[r][c-1][3];
   }
   return w;
+}
+// Выбирает случайные невзрываемые (каменные) внутренние стены.
+function genSolidWalls(){
+  const res = new Set();
+  let tries = 0;
+  while(res.size < 8 && tries < 300){
+    tries++;
+    const r=rand(H), c=rand(W);
+    const dir = rand(2)===0 ? 1 : 3; // низ или право — уникальные представления стены
+    const nr = r + DIRS[dir][0], nc = c + DIRS[dir][1];
+    if(nr<0||nr>=H||nc<0||nc>=W) continue; // не край карты
+    if(!wall[r][c][dir]) continue; // только если там есть стена
+    // пометить с обеих сторон (d и d^1)
+    res.add(r+','+c+','+dir);
+    res.add(nr+','+nc+','+(dir^1));
+  }
+  return Array.from(res);
 }
 function cellCount(){
   const mark = Array.from({length:H},()=>Array(W).fill(false));
@@ -369,6 +388,7 @@ function init(){
   dashFlash = null;
   wall = genWalls();
   ensureConnected();
+  solidWalls = genSolidWalls();
   lakes = genLakes();
   ensureLakeOpen();
   // клетки озер исключаем из пула для всех объектов, чтобы избежать пересечений
@@ -390,6 +410,7 @@ function init(){
   trap = cells.slice(14, 14 + 2 + extraTrap);
   bears = [cells[19]].concat(cells.slice(20, 20 + extraBear));
   fire = cells.slice(24, 24 + Math.min(level - 1, 3));
+  swamps = cells.slice(28, 33); // болота (до 5 клеток)
   const extraZombie = Math.min(level, 30);
   zombies = cells.slice(34, 34 + extraZombie);
   shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
@@ -406,6 +427,7 @@ function init(){
   carryingKey = false;
   over = false;
   aiming = false;
+  skipMove = false;
   moves = 0;
   timeLeft = LEVEL_TIME;
   camR=0; camC=0; moving=false; animFrom=null;
@@ -432,7 +454,7 @@ function init(){
 function saveGame(){
   const state = {
     player, chest, exitPos, river, lakes, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters, swamps, skipMove, solidWalls
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -453,6 +475,9 @@ function loadGame(){
   fire = data.fire || [];
   zombies = data.zombies || [];
   shooters = data.shooters || [];
+  swamps = data.swamps || [];
+  skipMove = data.skipMove || false;
+  solidWalls = data.solidWalls || [];
   markExplored();
   render(); updateHUD();
   return true;
@@ -513,6 +538,12 @@ function bestLine(){
 // ========== Движение и ходы ==========
 function tryMove(dr,dc){
   if(over) return;
+  if(skipMove){ // завяз в болоте — пропуск хода
+    skipMove = false;
+    msg('Ты завяз в болоте — пропускаешь ход.');
+    render();
+    return;
+  }
   const r=player[0], c=player[1];
   if(wall[r][c][nd(dr,dc)]){ msg('Стена!'); sfx('wall'); render(); return; }
   animFrom = [r,c];
@@ -638,6 +669,12 @@ function onEnter(cell){
     else if(carrying && !carryingKey) msg('Дверь закрыта. Нужен ключ 🗝️.');
     else msg('Это выход. Но ты без клада. Вернись за сундуком.');
   }
+  if(inList(cell, swamps)){ // болото: завяз — следующий ход пропускает
+    sfx('hole');
+    skipMove = true;
+    msg('Болото! Ноги увязли — следующий ход пропускаешь.');
+    saveGame(); render();
+  }
 }
 function nextHole(cell){
   let i = holes.findIndex(([rr,cc])=>rr===cell[0]&&cc===cell[1]);
@@ -742,6 +779,14 @@ function bomb(dr,dc){
   let target=[r+dr,c+dc];
   if(target[0]<0||target[0]>=H||target[1]<0||target[1]>=W){ msg('За краем стена — взрывать нечего.'); return; }
   if(wall[r][c][d]){
+    if(solidWalls.includes(r+','+c+','+d)){
+      // каменная стена не разрушается, но заряд сгорает
+      bombs--;
+      sfx('wall');
+      msg('Это каменная стена — её не взорвать. Заряд израсходован.');
+      saveGame(); render();
+      return;
+    }
     wall[r][c][d]=false;
     wall[target[0]][target[1]][d^1]=false;
     bombs--;
@@ -864,6 +909,7 @@ function render(){
     else if(sym==='🕳') ctx.fillStyle='#1a1a1f';
     else if(sym==='📦') ctx.fillStyle='#2f2a18';
     else if(sym==='💉') ctx.fillStyle='#2a1f24';
+    else if(sym==='🪤') ctx.fillStyle='#20301c';
     else if(sym==='⚠️') ctx.fillStyle='#2b2118';
     else ctx.fillStyle='#262a34';
     ctx.fillRect(x,y,CS,CS);
@@ -875,7 +921,7 @@ function render(){
     // стены (помещаем поверх подложки, но под медведем/игроком)
   }
   // стены
-  ctx.strokeStyle='#05070b'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.lineCap='round';
   for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
     if(!visible(r,c)) continue;
     const x=sc(c), y=sx(r);
@@ -884,10 +930,15 @@ function render(){
       const outOfWorld = nr<0||nr>=H||nc<0||nc>=W;
       const there = outOfWorld ? true : wall[r][c][d];
       if(!there) continue;
+      // невзрываемая (каменная) стена — светлее и толще
+      const solid = !outOfWorld && solidWalls.includes(r+','+c+','+d);
+      ctx.strokeStyle = solid ? '#cd7a3a' : '#05070b';
+      ctx.lineWidth = solid ? 7 : 5;
       if(d===0) line(x,y,x+CS,y);
       else if(d===1) line(x,y+CS,x+CS,y+CS);
       else if(d===2) line(x,y,x,y+CS);
       else line(x+CS,y,x+CS,y+CS);
+      ctx.strokeStyle='#05070b'; ctx.lineWidth=5;
     }
   }
   // медведи (только если видны)
@@ -1026,6 +1077,7 @@ function cellSymbol(r,c){
   if(inList([r,c],arsenal)) return '📦';
   if(inLakeCell([r,c])) return '🌀';
   if(inList([r,c],holes)) return '🕳';
+  if(inList([r,c],swamps)) return '🪤';
   if(inList([r,c],trap)) return '⚠️';
   return '';
 }
