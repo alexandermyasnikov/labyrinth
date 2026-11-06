@@ -720,7 +720,7 @@ function init(){
   player = cells[0];
   exitPos = cells[1];
   chest = cells[2];
-  keyPos = cells[16];
+  keyPos = cells[6]; // BUG FIX: был cells[16] — на 2+ уровне trap покрывает 14..18, ключ попадал на ловушку и не подбирался
   // (river удалён — не использовался)
   holes = cells.slice(7,11);
   arsenal = cells.slice(11,13);
@@ -737,12 +737,18 @@ function init(){
   bosses = cells.slice(74, 75); // 1 охотник-босс, знает позицию игрока и преследует
   // враги не должны появляться в стартовой зоне игрока (радиус 3)
   const far = c => Math.abs(c[0]-player[0]) + Math.abs(c[1]-player[1]) > 3;
-  bears = bears.filter(far);
-  zombies = zombies.filter(far);
-  shooters = shooters.filter(far);
-  bosses = bosses.filter(far);
-  fire = fire.filter(far);
-  trap = trap.filter(far);
+  // BUG FIX: ни ловушки, ни огонь, ни враги не должны стоять на статических
+  // клетках (ключ/сундук/выход/дырки/арсенал/госпиталь), иначе эффекты
+  // перекрываются (пример: ключ на ловушке не подбирался на 2+ уровне).
+  const occupied = new Set();
+  const take = (list) => list.filter(c => { const k = c[0]+','+c[1]; if(occupied.has(k)) return false; occupied.add(k); return far(c); });
+  for(const c of [player, exitPos, chest, keyPos, ...holes, ...arsenal, hospital]) occupied.add(c[0]+','+c[1]);
+  trap = take(trap);
+  fire = take(fire);
+  bears = take(bears);
+  zombies = take(zombies);
+  shooters = take(shooters);
+  bosses = take(bosses);
   health = 5;
   bombs = 5;
   carrying = false;
