@@ -88,7 +88,7 @@
   <div id="legend">
     <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
     <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span>
+    <span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span>
     <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
   </div>
   <button id="restart">Заново (R)</button>
@@ -97,7 +97,7 @@
       <h2>Помощь</h2>
       <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
       <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода.</p>
+      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.</p>
     </div>
   </div>
   <div id="overlay" hidden>
@@ -217,8 +217,8 @@ function activeTarget(){
 
 // ========== Состояние ==========
 let wall, player, chest, exitPos, keyPos, river=[], lakes=[], holes=[], arsenal=[], hospital,
-    trap=[], bears=[], fire=[], zombies=[], shooters=[], swamps=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
-    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null,
+    trap=[], bears=[], fire=[], zombies=[], shooters=[], swamps=[], bosses=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
+    timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null, bossTimerId = null,
     visGrid = [], shooterAim = new Set();
 let skipMove = 0; // сколько ходов пропущено из-за болота (задержка)
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
@@ -392,6 +392,7 @@ function init(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   shots = [];
@@ -436,11 +437,13 @@ function init(){
   const extraZombie = Math.min(level, 30);
   zombies = cells.slice(34, 34 + extraZombie);
   shooters = cells.slice(64, 74); // ровно 10 стрелков, не пересекаются с другими объектами
+  bosses = cells.slice(74, 77); // 3 охотника-босса, знают позицию игрока и преследуют
   // враги не должны появляться в стартовой зоне игрока (радиус 3)
   const far = c => Math.abs(c[0]-player[0]) + Math.abs(c[1]-player[1]) > 3;
   bears = bears.filter(far);
   zombies = zombies.filter(far);
   shooters = shooters.filter(far);
+  bosses = bosses.filter(far);
   fire = fire.filter(far);
   trap = trap.filter(far);
   health = 5;
@@ -470,13 +473,15 @@ function init(){
   zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 1200);
   // стрелки ходят и стреляют, каждые 2с
   shooterTimerId = setInterval(()=>{ if(!over) shooterTurn(); }, 2000);
+  // охотники-боссы знают позицию игрока и неотступно идут к нему каждые 1.2с
+  bossTimerId = setInterval(()=>{ if(!over) bossTurn(); }, 1200);
 }
 
 // ========== Сохранение партии (localStorage) ==========
 function saveGame(){
   const state = {
     player, chest, exitPos, river, lakes, holes, arsenal, hospital, trap, bears,
-    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters, swamps, skipMove
+    health, bombs, carrying, carryingKey, level, moves, timeLeft, over, explored, fire, zombies, shooters, swamps, bosses, skipMove
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(_){}
 }
@@ -497,6 +502,7 @@ function loadGame(){
   fire = data.fire || [];
   zombies = data.zombies || [];
   shooters = data.shooters || [];
+  bosses = data.bosses || [];
   swamps = data.swamps || [];
   skipMove = data.skipMove || 0;
   markExplored();
@@ -754,6 +760,58 @@ function zombieTurn(){
   }
 }
 
+// Охотник-босс: всегда знает позицию игрока и неотступно идёт к нему по
+// кратчайшему пути (BFS) через лабиринт, чтобы настичь и убить.
+function bossTurn(){
+  if(over) return;
+  for(const b of bosses){
+    if(over) break;
+    if(b[0]===player[0] && b[1]===player[1]){ // наступил на игрока — урон
+      hurtPlayer();
+      continue;
+    }
+    const step = nextStepTo(b[0], b[1], player[0], player[1]);
+    if(!step) continue; // нет пути (изолирован) — пропускаем
+    b[0]=step[0]; b[1]=step[1];
+    if(visGrid[step[0]][step[1]]) sfx('esStep');
+    // дошёл вплотную — бьёт
+    if(Math.abs(b[0]-player[0])+Math.abs(b[1]-player[1]) === 1){
+      hurtPlayer();
+    }
+  }
+}
+function hurtPlayer(){
+  sfx('bear');
+  health-=2; hurt(); msg('Охотник-босс настиг тебя! Тяжёлое ранение. Здоровье: '+health);
+  if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+  if(health<=0) endLose();
+}
+// Первый шаг кратчайшего пути BFS из (r1,c1) в (r2,c2). Возвращает [r,c] или null.
+function nextStepTo(r1,c1,r2,c2){
+  if(r1===r2&&c1===c2) return null;
+  const prev = new Map([[r1+','+c1, null]]);
+  const q = [[r1,c1]];
+  while(q.length){
+    const [r,c] = q.shift();
+    if(r===r2&&c===c2) break;
+    for(let d=0;d<4;d++){
+      const nr=r+DIRS[d][0], nc=c+DIRS[d][1];
+      const k=nr+','+nc;
+      if(nr<0||nr>=H||nc<0||nc>=W||wall[r][c][d]||prev.has(k)) continue;
+      prev.set(k, [r,c]);
+      q.push([nr,nc]);
+    }
+    if(r===r2&&c===c2) break;
+  }
+  if(!prev.has(r2+','+c2)) return null; // цель недостижима
+  // реконструировать путь от цели к старту, вернуть первый шаг от старта
+  const path = [[r2,c2]];
+  let key = r2+','+c2;
+  while(prev.get(key)){ const p = prev.get(key); path.push(p); key = p[0]+','+p[1]; }
+  path.reverse(); // теперь [старт, шаг1, ..., цель]
+  return path[1] || null;
+}
+
 // Стрелок: замечает игрока на дистанции ≤3 → целится (🏹) → стреляет.
 function shooterTurn(){
   if(over) return;
@@ -850,6 +908,7 @@ function endWin(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   const bBest = bestText(loadBest());
@@ -868,6 +927,7 @@ function endLose(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
@@ -884,6 +944,7 @@ function endTimeout(){
   if (bearTimerId) { clearInterval(bearTimerId); bearTimerId = null; }
   if (zombieTimerId) { clearInterval(zombieTimerId); zombieTimerId = null; }
   if (shooterTimerId) { clearInterval(shooterTimerId); shooterTimerId = null; }
+  if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
   carrying = false; // клад при проигрыше не переносится
@@ -972,6 +1033,10 @@ function render(){
   // стрелки (только если видны)
   for(const s of shooters){
     if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🏹' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
+  }
+  // охотники-боссы — всегда знают позицию игрока (видны всегда)
+  for(const b of bosses){
+    drawEmoji('🥷', sc(b[1])+CS/2, sx(b[0])+CS/2, 26);
   }
   // летящие пули (анимация ~0.25с)
   const nowS = Date.now();
