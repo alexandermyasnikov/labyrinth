@@ -219,13 +219,14 @@ function activeTarget(){
 let wall, player, chest, exitPos, keyPos, river=[], lakes=[], holes=[], arsenal=[], hospital,
     trap=[], bears=[], fire=[], zombies=[], shooters=[], swamps=[], bosses=[], health, bombs, carrying, carryingKey, over, moves=0, level=1,
     timeLeft = 0, timerId = null, bearTimerId = null, zombieTimerId = null, shooterTimerId = null, riverTimerId = null, bossTimerId = null,
-    visGrid = [], shooterAim = new Set();
+    visGrid = [], shooterAim = new Set(), bossAim = new Set();
 let skipMove = 0; // сколько ходов пропущено из-за болота (задержка)
 let shots = []; // анимация летящих пуль: {x1,y1, x2,y2, t0}
 let boom = null; // взрыв стены: {r,c, t0}
 let dashFlash = null; // след рывка: {r,c, t0}
 const LEVEL_TIME = 300; // секунд на уровень (5 минут)
 const SWAMP_SKIPS = 3; // сколько ходов болото задерживает (пропуск ходов)
+const BOSS_AIM_DIST = 3; // дальность стрельбы охотника-босса
 let camR = 0, camC = 0; // фракционное смещение камеры (0..1 к следующей клетке)
 let moving = false;     // идёт ли анимация
 let spd = 35;           // скорость lerp: 35 => ~0.15с на ход
@@ -395,6 +396,7 @@ function init(){
   if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
+  bossAim.clear();
   shots = [];
   boom = null;
   dashFlash = null;
@@ -760,25 +762,58 @@ function zombieTurn(){
   }
 }
 
-// Охотник-босс: всегда знает позицию игрока и неотступно идёт к нему по
-// кратчайшему пути (BFS) через лабиринт, чтобы настичь и убить.
+// Охотник-босс: всегда знает позицию игрока. Преследует его по кратчайшему
+// пути (BFS); если есть прямая видимость — останавливается и стреляет, как охотник.
 function bossTurn(){
   if(over) return;
   for(const b of bosses){
     if(over) break;
-    if(b[0]===player[0] && b[1]===player[1]){ // наступил на игрока — урон
-      hurtPlayer();
-      continue;
+    const key = b[0]+','+b[1];
+    const dist = Math.abs(b[0]-player[0])+Math.abs(b[1]-player[1]);
+    // стрельба при прямой видимости в пределах дальности
+    if(dist <= BOSS_AIM_DIST && hasClearShot(b[0], b[1], player[0], player[1])){
+      if(bossAim.has(key)){
+        // прицелился в прошлый такт — выстрел
+        sfx('danger'); sfx('shoot');
+        health--; hurt(); msg('Охотник-босс подстрелил тебя! Здоровье: '+health);
+        if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+        if(health<=0) endLose();
+        bossAim.delete(key);
+        shots.push({ x1:b[0], y1:b[1], x2:player[0], y2:player[1], t0:Date.now() });
+      } else {
+        sfx('danger');
+        bossAim.add(key);
+      }
+      continue; // на этом такте не движется — прицеливается/стреляет
     }
+    if(bossAim.has(key)) bossAim.delete(key);
+    // иначе идёт к игроку
+    if(b[0]===player[0] && b[1]===player[1]){ hurtPlayer(); continue; }
     const step = nextStepTo(b[0], b[1], player[0], player[1]);
-    if(!step) continue; // нет пути (изолирован) — пропускаем
+    if(!step) continue; // путь недостижим — стоим
     b[0]=step[0]; b[1]=step[1];
     if(visGrid[step[0]][step[1]]) sfx('esStep');
-    // дошёл вплотную — бьёт
     if(Math.abs(b[0]-player[0])+Math.abs(b[1]-player[1]) === 1){
       hurtPlayer();
     }
   }
+}
+// Прямая видимость по лучу между двумя клетками (без стен между ними).
+// Идёт шаг за шагом от начальной к целевой, проверяя стены на пути.
+function hasClearShot(r1,c1,r2,c2){
+  if(r1===r2&&c1===c2) return true;
+  let r=r1, c=c1;
+  while(r!==r2 || c!==c2){
+    // смещение на 1 шаг в сторону цели (сначала по строкам, затем по столбцам)
+    let dr=0, dc=0;
+    if(r!==r2) dr = r<r2 ? 1 : -1;
+    else dc = c<c2 ? 1 : -1;
+    const d = dr===1?1 : dr===-1?0 : dc===1?3 : 2;
+    if(wall[r][c][d]) return false; // стена на пути
+    r+=dr; c+=dc;
+    if(r===r2 && c===c2) return true; // дошли — открыто
+  }
+  return true;
 }
 function hurtPlayer(){
   sfx('bear');
@@ -911,6 +946,7 @@ function endWin(){
   if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
+  bossAim.clear();
   const bBest = bestText(loadBest());
   showOverlay('🏆 ПОБЕДА', '#ffd166',
     'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
@@ -930,6 +966,7 @@ function endLose(){
   if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
+  bossAim.clear();
   showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
     'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
     '<br>Уровень сброшен до 1');
@@ -947,6 +984,7 @@ function endTimeout(){
   if (bossTimerId) { clearInterval(bossTimerId); bossTimerId = null; }
   if (riverTimerId) { clearInterval(riverTimerId); riverTimerId = null; }
   shooterAim.clear();
+  bossAim.clear();
   carrying = false; // клад при проигрыше не переносится
   level = 1;
   msg('⏰ Время вышло!');
@@ -1034,10 +1072,6 @@ function render(){
   for(const s of shooters){
     if(visible(s[0],s[1])) drawEmoji(shooterAim.has(s[0]+','+s[1]) ? '🏹' : '👮', sc(s[1])+CS/2, sx(s[0])+CS/2, 24);
   }
-  // охотники-боссы — всегда знают позицию игрока (видны всегда)
-  for(const b of bosses){
-    drawEmoji('🥷', sc(b[1])+CS/2, sx(b[0])+CS/2, 26);
-  }
   // летящие пули (анимация ~0.25с)
   const nowS = Date.now();
   shots = shots.filter(b => nowS - b.t0 < 250);
@@ -1122,6 +1156,10 @@ function render(){
     const g = ctx.createRadialGradient(C,C,N*0.5, C,C,N*0.8);
     g.addColorStop(0,'rgba(200,40,50,0)'); g.addColorStop(1,'rgba(200,40,50,'+a.toFixed(2)+')');
     ctx.fillStyle=g; ctx.fillRect(0,0,N,N);
+  }
+  // охотники-боссы — рисуем поверх тумана/затемнения, чтобы всегда были видны
+  for(const b of bosses){
+    drawEmoji(bossAim.has(b[0]+','+b[1]) ? '🎯' : '🥷', sc(b[1])+CS/2, sx(b[0])+CS/2, 26);
   }
 }
 function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
