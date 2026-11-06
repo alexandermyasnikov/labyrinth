@@ -90,9 +90,9 @@ fn save_best(win: &Window, b: Best) {
     storage_set(win, "labyrinth.best", &format!("{{\"level\":{},\"time1\":{}}}", b.level, t1));
 }
 
-fn each(ms: i32, f: impl Fn() + 'static) -> i32 {
+fn each(win: &Window, ms: i32, f: impl Fn() + 'static) -> i32 {
     let cb = Closure::wrap(Box::new(f) as Box<dyn FnMut()>);
-    let id = shared().borrow().win.clone().set_interval_with_callback_and_timeout_and_arguments(cb.as_ref().unchecked_ref(), ms, &js_sys::Array::new()).unwrap();
+    let id = win.set_interval_with_callback_and_timeout_and_arguments(cb.as_ref().unchecked_ref(), ms, &js_sys::Array::new()).unwrap();
     cb.forget();
     id
 }
@@ -198,7 +198,8 @@ impl Web {
         // река: старт/стоп автосноса
         if self.g.river_on && self.river_id.is_none() {
             let w = shared();
-            self.river_id = Some(each(RIVER_MS as i32, move || { w.borrow_mut().lake_tick(); }));
+            let win = self.win.clone();
+            self.river_id = Some(each(&win, RIVER_MS as i32, move || { w.borrow_mut().lake_tick(); }));
         } else if !self.g.river_on {
             if let Some(id) = self.river_id.take() { self.win.clear_interval_with_handle(id); }
         }
@@ -213,18 +214,20 @@ impl Web {
     }
     fn start_timers(&mut self) {
         self.clear_timers();
+        let win = self.win.clone();
         let wa = shared();
-        self.tick_id = Some(each(1000, move || { wa.borrow_mut().tick(); }));
-        self.bear_id = Some(each(BEAR_MS as i32, move || { let w = shared(); let n = now_ms(&w.borrow().win.clone()); w.borrow_mut().turn("bear", n); }));
-        self.zombie_id = Some(each(ZOMBIE_MS as i32, move || { let w = shared(); let n = now_ms(&w.borrow().win.clone()); w.borrow_mut().turn("zombie", n); }));
-        self.shooter_id = Some(each(SHOOTER_MS as i32, move || { let w = shared(); let n = now_ms(&w.borrow().win.clone()); w.borrow_mut().turn("shooter", n); }));
-        self.boss_id = Some(each(BOSS_MS as i32, move || { let w = shared(); let n = now_ms(&w.borrow().win.clone()); w.borrow_mut().turn("boss", n); }));
+        self.tick_id = Some(each(&win, 1000, move || { wa.borrow_mut().tick(); }));
+        self.bear_id = Some(each(&win, BEAR_MS as i32, move || { let w = shared(); w.borrow_mut().turn("bear"); }));
+        self.zombie_id = Some(each(&win, ZOMBIE_MS as i32, move || { let w = shared(); w.borrow_mut().turn("zombie"); }));
+        self.shooter_id = Some(each(&win, SHOOTER_MS as i32, move || { let w = shared(); w.borrow_mut().turn("shooter"); }));
+        self.boss_id = Some(each(&win, BOSS_MS as i32, move || { let w = shared(); w.borrow_mut().turn("boss"); }));
         let wa = shared();
-        self.anim_id = Some(each(16, move || { wa.borrow_mut().animate(); }));
+        self.anim_id = Some(each(&win, 16, move || { wa.borrow_mut().animate(); }));
     }
 
     fn tick(&mut self) { self.g.tick_second(now_ms(&self.win)); self.flush(); self.render(); }
-    fn turn(&mut self, kind: &str, now: u64) {
+    fn turn(&mut self, kind: &str) {
+        let now = now_ms(&self.win);
         if self.g.over || self.g.paused { return; }
         match kind {
             "bear" => self.g.bear_turn(now),
