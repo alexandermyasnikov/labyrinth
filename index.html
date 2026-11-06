@@ -330,8 +330,9 @@ let _seed = NaN, URL_SEED = null;
 try{ const qs = new URLSearchParams((typeof location!=='undefined' && location.search) || ''); const sv = qs.get('seed'); if(sv) URL_SEED = Number(sv); }catch(_){}
 _seed = URL_SEED; // null = случайный режим: новый сид на каждую перегенерацию
 let rng = null;
-function rollSeed(){ // новый случайный сид на уровень (если ?seed не задан) + обновление футера
-  if(URL_SEED == null){ _seed = Math.floor(Math.random()*1000000); rng = mulberry32(_seed|0); }
+function rollSeed(keep){ // keep=true: «заново» — тот же сид, тот же лабиринт
+  if(keep){ rng = mulberry32(_seed|0); }
+  else if(URL_SEED == null){ _seed = Math.floor(Math.random()*1000000); rng = mulberry32(_seed|0); }
   else if(rng == null){ rng = mulberry32(_seed|0); } // URL-сид: поток rng идёт дальше между уровнями
   try{ const cl=document.getElementById('cur-link'); if(cl){ cl.href='?seed='+(_seed|0); cl.textContent='сид текущей партии: '+(_seed|0); } }catch(_){}
 }
@@ -701,8 +702,8 @@ function clearAllTimers(){
 }
 // Сброс прицеливания всех врагов (стрелки и босс).
 function clearAims(){ shooterAim.clear(); bossAim.clear(); }
-function init(){
-  rollSeed(); // при перегенерации уровня (R / победа) — новый случайный сид внизу страницы
+function init(newWorld=true){ // R = same world, N = new seed
+  rollSeed(!newWorld); // R/«заново»: keep сида; N: новый случайный сид внизу страницы
   overlay.hidden = true;
   try{ const pe=document.getElementById('pause'); if(pe) pe.hidden=true; }catch(_){} 
   clearAllTimers();
@@ -1568,8 +1569,8 @@ const KEYMAP = {
 };
 document.addEventListener('keydown', e=>{
   if(e.code==='KeyP' || e.code==='Escape'){ togglePause(); return; }
-  if(e.code==='KeyR'){ init(); render(); return; }
-  if(e.code==='KeyN'){ init(); render(); return; } // новый мир со случайным сидом
+  if(e.code==='KeyR'){ init(false); render(); return; }
+  if(e.code==='KeyN'){ init(true); render(); return; } // новый мир со случайным сидом
   if(paused) return; // в паузе только выход из неё и рестарт
   if(e.code==='KeyH'){ toggleHelp(); return; }
   const dir = KEYMAP[e.code];
@@ -1586,11 +1587,11 @@ document.addEventListener('keydown', e=>{
     else tryMove(dir[0],dir[1]);
   }
 });
-document.getElementById('restart').addEventListener('click', ()=>{ init(); render(); });
-document.getElementById('new-world').addEventListener('click', ()=>{ init(); render(); });
+document.getElementById('restart').addEventListener('click', ()=>{ init(false); render(); });
+document.getElementById('new-world').addEventListener('click', ()=>{ init(true); render(); });
 helpEl.addEventListener('click', (e)=>{ if(e.target===helpEl && helpOpen) toggleHelp(); });
 if(pauseEl) pauseEl.addEventListener('click', (e)=>{ if(e.target===pauseEl && paused) togglePause(); });
-ovReplay.addEventListener('click', ()=>{ init(); render(); });
+ovReplay.addEventListener('click', ()=>{ init(false); render(); });
 
 applyI18n();
 setupLangButton();
