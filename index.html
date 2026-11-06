@@ -125,6 +125,8 @@
   #pause[hidden]{ display:none; }
   #pause-panel{ background:linear-gradient(180deg,#202a3c,#171e2d); border:1px solid var(--line); border-radius:20px; padding:28px 40px; text-align:center; }
   #pause-btn{ padding:4px 10px; margin-left:4px; font:inherit; font-size:12px; border-radius:999px; border:1px solid var(--line); background:#222b3d; color:#ffe9a8; cursor:pointer; }
+  footer{ color:var(--muted); font-size:12px; text-align:center; margin:2px 0 14px; }
+  footer a{ color:var(--accent); text-decoration:none; } footer a:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -151,7 +153,7 @@
   </div>
   <div class="game-wrap">
     <div id="status" data-i18n="statusStart">Найди сундук и вынеси его через выход.</div>
-    <canvas id="cv" width="560" height="560"></canvas>
+    <canvas id="cv" width="560" height="560" role="img" aria-label="Лабиринт: игровое поле"></canvas>
   </div>
   <div id="legend" data-i18n="leg" data-html="1"></div>
   <button id="restart" data-i18n="btnRestart">Заново (R)</button>
@@ -171,10 +173,11 @@
       <span></span><button id="pad-down" type="button" aria-label="Вниз">▼</button><span></span>
     </div>
     <div class="side">
-      <button id="pad-dash" type="button">⚡</button>
-      <button id="pad-bomb" type="button">💣</button>
+      <button id="pad-dash" type="button" aria-label="Рывок">⚡</button>
+      <button id="pad-bomb" type="button" aria-label="Бомба">💣</button>
     </div>
   </div>
+  <footer><a href="https://github.com/alexandermyasnikov/labyrinth" target="_blank" rel="noopener">GitHub</a> · <a href="?seed=daily">сид дня</a> · <a href="?seed=123">сид 123</a></footer>
   <div id="pause" hidden>
     <div id="pause-panel">
       <h2 data-i18n="pausedTitle">⏸ ПАУЗА</h2>
@@ -215,7 +218,7 @@ const I18N = {
     w_shooter:'Стрелок ранил тебя выстрелом! Здоровье: ', w_dropChest:'Клад выпал и остался тут.',
     w_dropChestBack:'Сундук вернулся на исходную клетку.', hudScore:'Очки', hudCombo:'Комбо', hudDash:'Рывок',
     w_swampSkip1:'Ты завяз в болоте — пропускаешь ход (', w_swampSkip2:' осталось).',
-    ach_first:'Первый выход!', ach_combo:'Серия из 10 быстрых ходов!', ach_explorer:'Разведал >=150 клеток!', ach_speed:'Победа за 90 секунд!',
+    ach_first:'Первый выход!', ach_combo:'Серия из 10 быстрых ходов!', ach_explorer:'Разведал >=150 клеток!', ach_speed:'Победа за 90 секунд!', ach_clean:'Победа без урона!',
     achUnlock:'🏅 Достижение: ',
     pausedTitle:'⏸ ПАУЗА', btnResume:'Продолжить (P)', btnPause:'⏸',
     w_dropChestTrap:'Клад остался на месте ранения.', w_noBombs:'Нет бомб! Найди арсенал.',
@@ -257,7 +260,7 @@ const I18N = {
     w_shooter:'The shooter wounded you! Health: ', w_dropChest:'The chest dropped and stayed here.',
     w_dropChestBack:'The chest returned to its original cell.', hudScore:'Score', hudCombo:'Combo', hudDash:'Dash',
     w_swampSkip1:'You are stuck in the swamp — skipping a move (', w_swampSkip2:' left).',
-    ach_first:'First escape!', ach_combo:'10-move streak!', ach_explorer:'Explored >=150 cells!', ach_speed:'Win in 90 seconds!',
+    ach_first:'First escape!', ach_combo:'10-move streak!', ach_explorer:'Explored >=150 cells!', ach_speed:'Win in 90 seconds!', ach_clean:'Win without taking damage!',
     achUnlock:'🏅 Achievement: ',
     pausedTitle:'⏸ PAUSED', btnResume:'Resume (P)', btnPause:'⏸',
     w_dropChestTrap:'The chest stayed where you were hurt.', w_noBombs:'No bombs! Find an arsenal.',
@@ -409,20 +412,23 @@ function showOverlay(title, color, statsHtml){
   ovStats.innerHTML = statsHtml;
   overlay.hidden = false;
 }
+const _hudCache = {};
+function _set(el, prop, val){ if(!el) return; if(_hudCache[el.id+prop] !== val){ _hudCache[el.id+prop] = val; el[prop] = val; } }
+function _setHTML(el, val){ if(!el) return; if(_hudCache[el.id+'html'] !== val){ _hudCache[el.id+'html'] = val; el.innerHTML = val; } }
 function updateHUD(){
   const dim = s=>'<span style="opacity:.3">'+s+'</span>';
   const hpOn=Math.max(0,health), hpOff=Math.max(0,5-health);
   const bmOn=Math.max(0,bombs), bmOff=Math.max(0,5-bombs);
-  hudHp.innerHTML = '♥'.repeat(hpOn) + (hpOff? dim('♥'.repeat(hpOff)):'');
-  hudBombs.innerHTML = '💣'.repeat(bmOn) + (bmOff? dim('💣'.repeat(bmOff)):'');
-  hudChest.textContent = carrying ? '✔' : '✖';
-  hudKey.textContent = carryingKey ? '✔' : '✖';
-  hudLevel.textContent = level;
-  hudMoves.textContent = moves;
-  const stEl = document.getElementById('hud-score'); if(stEl) stEl.textContent = score;
-  const cbEl = document.getElementById('hud-combo'); if(cbEl) cbEl.textContent = 'x' + Math.max(1, combo);
-  const dEl = document.getElementById('hud-dash'); if(dEl){ const ready = Date.now() >= dashUntil; dEl.textContent = ready ? '⚡' : '·'; dEl.className = ready ? 'ready' : ''; }
-  hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + t('secs');
+  _setHTML(hudHp, '♥'.repeat(hpOn) + (hpOff? dim('♥'.repeat(hpOff)):''));
+  _setHTML(hudBombs, '💣'.repeat(bmOn) + (bmOff? dim('💣'.repeat(bmOff)):''));
+  _set(hudChest, 'textContent', carrying ? '✔' : '✖');
+  _set(hudKey, 'textContent', carryingKey ? '✔' : '✖');
+  _set(hudLevel, 'textContent', level);
+  _set(hudMoves, 'textContent', moves);
+  const stEl = document.getElementById('hud-score'); _set(stEl, 'textContent', score);
+  const cbEl = document.getElementById('hud-combo'); _set(cbEl, 'textContent', 'x' + Math.max(1, combo));
+  const dEl = document.getElementById('hud-dash'); if(dEl){ const ready = Date.now() >= dashUntil; _set(dEl, 'textContent', ready ? '⚡' : '·'); if(dEl.className !== (ready ? 'ready' : '')) dEl.className = ready ? 'ready' : ''; }
+  _set(hudTime, 'textContent', (timeLeft > 999 ? 999 : timeLeft) + t('secs'));
   if(hudTime.classList && hudTime.classList.toggle) hudTime.classList.toggle('low', timeLeft <= CFG.LOW_TIME && timeLeft > 0);
 }
 
@@ -493,7 +499,7 @@ function hurt(){ hurtUntil = Date.now() + 350; updateHUD(); }
 // --- Достижения (hash в localStorage) ---
 function loadStats(){
   try{ const v = localStorage.getItem('labyrinth.stats'); const s = v ? JSON.parse(v) : null; if(s && typeof s==='object') return s; }catch(_){}
-  return { wins:0, bestCombo:0, exploredMax:0, speedrun:false, unlocked:[] };
+  return { wins:0, bestCombo:0, exploredMax:0, speedrun:false, cleanWin:false, unlocked:[] };
 }
 function saveStats(){ try{ localStorage.setItem('labyrinth.stats', JSON.stringify(stats)); }catch(_){} }
 function countExplored(){ let n=0; for(let r=0;r<H;r++) for(let c=0;c<W;c++) if(explored[r] && explored[r][c]) n++; return n; }
@@ -502,6 +508,7 @@ const ACH = [
   { id:'combo10',  name:()=>t('ach_combo'),    check:()=> stats.bestCombo>=10 },
   { id:'explorer', name:()=>t('ach_explorer'), check:()=> stats.exploredMax>=150 },
   { id:'speedrun', name:()=>t('ach_speed'),    check:()=> !!stats.speedrun },
+  { id:'clean',    name:()=>t('ach_clean'),    check:()=> !!stats.cleanWin },
 ];
 function checkAchievements(){
   for(const a of ACH){
@@ -743,6 +750,8 @@ function init(){
   aiming = false;
   paused = false;
   helpOpen = false; try{ if(helpEl) helpEl.hidden = true; }catch(_){}
+  moveLockUntil = 0; dashUntil = 0; hurtUntil = 0; // BUG FIX: после R первый ход/рывок не должен ждать кулдаун
+  if(msgTimer){ clearTimeout(msgTimer); msgTimer = null; }
   score = 0; combo = 0; comboUntil = 0; tookDamage = false;
   parts = []; shake = 0;
   skipMove = 0;
@@ -1190,6 +1199,7 @@ function endWin(){
   addScore(1000); // победа
   const winTime = LEVEL_TIME - timeLeft;
   if(winTime <= 90 && level-1===1) stats.speedrun = true;
+  if(!tookDamage) stats.cleanWin = true;
   stats.wins++;
   stats.exploredMax = Math.max(stats.exploredMax, countExplored());
   saveStats();
@@ -1419,24 +1429,30 @@ function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2
 // Рисует эмодзи так, чтобы его визуальный центр был точно в точке (cx,cy).
 // Сначала рисуем во временный канвас, ищем bbox по непрозрачным пикселям,
 // затем отрисовываем смещённый — работает одинаково во всех браузерах.
+// Центры кэшируются по (символ|размер): getImageData на каждый кадр был дорог.
+const _emojiCache = new Map();
 let off = null, octx = null;
 function drawEmoji(sym, cx, cy, size){
-  if(!off){ off = document.createElement('canvas'); octx = off.getContext('2d'); }
-  off.width = size; off.height = size;
-  octx.clearRect(0,0,size,size);
-  octx.font = size + 'px sans-serif';
-  octx.textAlign = 'center'; octx.textBaseline = 'middle';
-  octx.fillText(sym, size/2, size/2);
-  const img = octx.getImageData(0,0,size,size);
-  const data = img.data;
-  let minX=size, maxX=0, minY=size, maxY=0;
-  for(let y=0;y<size;y++) for(let x=0;x<size;x++){
-    const alpha = data[(y*size+x)*4+3];
-    if(alpha>10){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  const key = sym + '|' + size;
+  let center = _emojiCache.get(key);
+  if(!center){
+    if(!off){ off = document.createElement('canvas'); octx = off.getContext('2d'); }
+    off.width = size; off.height = size;
+    octx.clearRect(0,0,size,size);
+    octx.font = size + 'px sans-serif';
+    octx.textAlign = 'center'; octx.textBaseline = 'middle';
+    octx.fillText(sym, size/2, size/2);
+    const img = octx.getImageData(0,0,size,size);
+    const data = img.data;
+    let minX=size, maxX=0, minY=size, maxY=0;
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+      const alpha = data[(y*size+x)*4+3];
+      if(alpha>10){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+    }
+    center = { x: maxX>minX ? (minX+maxX)/2 : size/2, y: maxY>minY ? (minY+maxY)/2 : size/2 };
+    _emojiCache.set(key, center);
   }
-  let centerX = maxX>minX ? (minX+maxX)/2 : size/2;
-  let centerY = maxY>minY ? (minY+maxY)/2 : size/2;
-  ctx.drawImage(off, cx - centerX, cy - centerY);
+  ctx.drawImage(off, cx - center.x, cy - center.y);
 }
 
 function cellSymbol(r,c){
@@ -1515,6 +1531,8 @@ document.addEventListener('keydown', e=>{
   }
 });
 document.getElementById('restart').addEventListener('click', ()=>{ init(); render(); });
+helpEl.addEventListener('click', (e)=>{ if(e.target===helpEl && helpOpen) toggleHelp(); });
+if(pauseEl) pauseEl.addEventListener('click', (e)=>{ if(e.target===pauseEl && paused) togglePause(); });
 ovReplay.addEventListener('click', ()=>{ init(); render(); });
 
 applyI18n();
