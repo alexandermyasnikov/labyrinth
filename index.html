@@ -1388,12 +1388,13 @@ function render(){
     ctx.fillStyle = frac > 0.6 ? '#58d68d' : frac > 0.3 ? '#f5c542' : '#e63946';
     ctx.fillRect(bx, by, bw*frac, bh);
   }
-  // шеврон компаса: статичный, по центру соседней клетки (как изначально),
-  // скрыт когда цель уже в тумане (dist <= FOG_RADIUS) — см. specs/research-compass.md
+  // шеврон компаса: статичный, на границе клетки игрока по прямой линии к цели.
+  // Глиф и позиция совпадают (8 сторон, с диагоналями) — направление честное,
+  // не заходит в стену соседней клетки. Скрыт в тумане — см. specs/research-compass.md
   {
     const { dir, dx, dy, dist } = directionToTarget();
     if(dir !== '🏆' && dist > CFG.FOG_RADIUS){
-      const off = CS; // центр соседней клетки (первый шаг BFS)
+      const off = CS/2 - 6; // край клетки игрока по направлению к цели
       const px = C + CS/2 + dx*off, py = C + CS/2 + dy*off;
       ctx.save();
       ctx.globalAlpha = 0.85;
