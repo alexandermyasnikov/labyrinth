@@ -473,8 +473,8 @@ function init(){
   }, 1000);
   // медведи ходят независимо от игрока: каждые 1.5с
   bearTimerId = setInterval(()=>{ if(!over) bearTurn(); }, 1500);
-  // зомби ходят медленно, каждые 2.5с
-  zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 1200);
+  // зомби ходят медленно, каждые 1.5с
+  zombieTimerId = setInterval(()=>{ if(!over) zombieTurn(); }, 1500);
   // стрелки ходят и стреляют, каждые 2с
   shooterTimerId = setInterval(()=>{ if(!over) shooterTurn(); }, 2000);
   // охотники-боссы знают позицию игрока и неотступно идут к нему каждые 1.2с
