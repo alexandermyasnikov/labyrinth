@@ -29,13 +29,15 @@
     text-shadow:0 0 40px var(--glow); filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
   }
   .hud {
-    display:flex; flex-wrap:wrap; justify-content:center; gap:8px 14px;
-    align-items:center; padding:9px 18px; max-width:720px; margin:0 auto;
+    display:flex; flex-direction:column; gap:6px; justify-content:center;
+    align-items:center; padding:10px 18px; max-width:720px; margin:0 auto;
     background:linear-gradient(180deg, rgba(30,38,54,.72), rgba(20,26,38,.82));
     border:1px solid var(--line); border-radius:16px;
     box-shadow:0 8px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   }
+  .hud-row { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:6px 16px; }
+  .hud-row + .hud-row { margin-top:2px; }
   .hud span { white-space:nowrap; color:var(--muted); font-size:13px; }
   .hud b { color:var(--accent); font-size:17px; text-shadow:0 0 12px rgba(255,209,102,.35); }
   .hud .heart { color:var(--heart); }
@@ -112,20 +114,22 @@
 </style>
 </head>
 <body>
-  <h1>labyrinth</h1>
+  <h1 data-i18n="title">Лабиринт</h1>
   <div id="log" data-i18n="logHint"></div>
   <div id="bestline"></div>
   <div class="hud">
-    <span><span data-i18n="hudHealth">Здоровье</span>: <b class="heart" id="hud-hp">♥♥♥</b></span>
-    <span><span data-i18n="hudBombs">Бомбы</span>: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
-    <span><span data-i18n="hudChest">Клад</span>: <b id="hud-chest">✖</b></span>
-    <span><span data-i18n="hudKey">Ключ</span>: <b id="hud-key">✖</b></span>
-    <span><span data-i18n="hudLevel">Уровень</span>: <b id="hud-level">1</b></span>
-    <span><span data-i18n="hudMoves">Ходы</span>: <b id="hud-moves">0</b></span>
-    <span><span data-i18n="hudTarget">Цель</span>: <b id="hud-target">0</b></span>
-    <span><span data-i18n="hudCompass">Компас</span>: <b id="hud-compass">?</b></span>
-    <span><span data-i18n="hudTime">Время</span>: <b id="hud-time">--</b></span>
-    <button id="lang-btn" type="button"></button>
+    <span class="hud-row">
+      <span><span data-i18n="hudHealth">Здоровье</span>: <b class="heart" id="hud-hp">♥♥♥</b></span>
+      <span><span data-i18n="hudBombs">Бомбы</span>: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
+      <button id="lang-btn" type="button"></button>
+    </span>
+    <span class="hud-row">
+      <span><span data-i18n="hudChest">Клад</span>: <b id="hud-chest">✖</b></span>
+      <span><span data-i18n="hudKey">Ключ</span>: <b id="hud-key">✖</b></span>
+      <span><span data-i18n="hudLevel">Уровень</span>: <b id="hud-level">1</b></span>
+      <span><span data-i18n="hudMoves">Ходы</span>: <b id="hud-moves">0</b></span>
+      <span><span data-i18n="hudTime">Время</span>: <b id="hud-time">--</b></span>
+    </span>
   </div>
   <div class="game-wrap">
     <div id="status" data-i18n="statusStart">Найди сундук и вынеси его через выход.</div>
@@ -154,9 +158,9 @@
 const I18N = {
   ru: {
     hudHealth:'Здоровье', hudBombs:'Бомбы', hudChest:'Клад', hudKey:'Ключ',
-    hudLevel:'Уровень', hudMoves:'Ходы', hudTarget:'Цель', hudCompass:'Компас', hudTime:'Время',
+    hudLevel:'Уровень', hudMoves:'Ходы', hudTime:'Время',
     logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново',
-    statusStart:'Найди сундук и вынеси его через выход.',
+    statusStart:'Найди сундук и вынеси его через выход.', title:'Лабиринт',
     leg:'<span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span><span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span><span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span><span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>',
     btnRestart:'Заново (R)', btnReplay:'Играть снова',
     helpTitle:'Помощь',
@@ -190,9 +194,9 @@ const I18N = {
   },
   en: {
     hudHealth:'Health', hudBombs:'Bombs', hudChest:'Chest', hudKey:'Key',
-    hudLevel:'Level', hudMoves:'Moves', hudTarget:'Target', hudCompass:'Compass', hudTime:'Time',
+    hudLevel:'Level', hudMoves:'Moves', hudTime:'Time',
     logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart',
-    statusStart:'Find the chest and carry it out through the exit.',
+    statusStart:'Find the chest and carry it out through the exit.', title:'labyrinth',
     leg:'<span>🧙 player</span><span>💰 chest</span><span>🚩 exit</span><span>🗝️ key</span><span>💉 hospital</span><span>📦 arsenal</span><span>🌀 lake</span><span>🕳 hole</span><span>🪷 swamp</span><span>🐻 bear</span><span>⚠️ trap</span><span>🔥 fire</span><span>🧟 zombie</span><span>👮 shooter</span><span>🥷 boss</span><span><span class="k">B</span> — destroy wall · <span class="k">R</span> — restart</span>',
     btnRestart:'Restart (R)', btnReplay:'Play again',
     helpTitle:'Help',
@@ -231,7 +235,7 @@ lang = (lang==='ru'||lang==='en') ? lang : 'en';
 function t(key){ return I18N[lang][key] ?? I18N.ru[key]; }
 function setLang(l){ lang = (l==='ru'||l==='en')?l:'en'; localStorage.setItem('labyrinth.lang', lang); applyI18n(); updateHUD(); render(); }
 function applyI18n(){
-  document.title = 'labyrinth';
+  document.title = t('title');
   document.querySelectorAll('[data-i18n]').forEach(el=>{
     const k = el.getAttribute('data-i18n');
     if(el.getAttribute('data-html')==='1') el.innerHTML = t(k); else el.textContent = t(k);
@@ -299,8 +303,6 @@ const hudChest = document.getElementById('hud-chest');
 const hudKey = document.getElementById('hud-key');
 const hudLevel = document.getElementById('hud-level');
 const hudMoves = document.getElementById('hud-moves');
-const hudTarget = document.getElementById('hud-target');
-const hudCompass = document.getElementById('hud-compass');
 const hudTime = document.getElementById('hud-time');
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ov-title');
@@ -330,9 +332,6 @@ function updateHUD(){
   hudKey.textContent = carryingKey ? '✔' : '✖';
   hudLevel.textContent = level;
   hudMoves.textContent = moves;
-  hudTarget.textContent = shooterAim.size;
-  const { dir } = directionToTarget();
-  hudCompass.textContent = dir === '🏆' ? '●' : dir;
   hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + t('secs');
 }
 
