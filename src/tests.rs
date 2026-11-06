@@ -171,14 +171,14 @@ use crate::game::*;
         let mut found_fire = false;
         for seed in 0..60u32 {
             let mut gg = game(seed);
-            gg.level = 2; gg.restart(100_000);
+            gg.level = 2; gg.new_world(100_000);
             if !gg.fire.is_empty() { found_fire = true; break; }
         }
         assert!(found_fire, "огонь со 2 уровня");
         let mut g = game(42);
-        g.level = 2; g.restart(100_000);
+        g.level = 2; g.new_world(100_000);
         let bears_l2 = g.bears.len();
-        g.level = 10; g.restart(200_000);
+        g.level = 10; g.new_world(200_000);
         assert!(g.bears.len() >= bears_l2);
         assert!(g.bears.len() <= 30);
         assert!(g.trap.len() <= 5);
@@ -1251,4 +1251,16 @@ fn next_level_after_win_is_new_maze() {
     g.new_world(5000);
     assert_ne!(g.wall, wall_before, "после победы — новый лабиринт");
     assert_eq!(g.level, 2, "уровень не сброшен");
+}
+
+#[test]
+fn restart_gives_up_to_level_1_same_world() {
+    // «Заново» посреди уровня: тот же лабиринт, но с 1-го уровня
+    let mut g = game(42);
+    g.level = 4;
+    let wall = g.wall;
+    g.restart(100_000);
+    assert_eq!(g.level, 1);
+    assert_eq!(g.wall, wall, "тот же мир");
+    assert_eq!(g.health, 5); assert_eq!(g.moves, 0);
 }
