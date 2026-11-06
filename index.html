@@ -73,14 +73,15 @@
   #legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:#c6ceda; max-width:740px; justify-content:center; }
   #legend span { white-space:nowrap; }
   #restart {
-    margin:0 0 18px; padding:11px 30px; font-size:15px; font-weight:700;
+    margin:0; padding:11px 30px; font-size:15px; font-weight:700;
     border:none; border-radius:999px; cursor:pointer; color:#1a1408; letter-spacing:1px;
     background:linear-gradient(135deg,#ffd166,#ff9f43);
     box-shadow:0 8px 26px rgba(255,159,67,.4), inset 0 1px 0 rgba(255,255,255,.4);
     transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
   }
   #restart:hover { filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 12px 32px rgba(255,159,67,.5); }
-  #new-world { margin:0 6px 18px; padding:11px 24px; font-size:15px; font-weight:700; border:1px solid var(--line); border-radius:999px; cursor:pointer; color:#ffe9a8; background:#222b3d; letter-spacing:1px; transition:transform .15s ease, filter .2s ease; }
+  .actions{ display:flex; gap:10px; align-items:center; justify-content:center; margin:0 0 18px; }
+  #new-world { margin:0; padding:11px 24px; font-size:15px; font-weight:700; border:1px solid var(--line); border-radius:999px; cursor:pointer; color:#ffe9a8; background:#222b3d; letter-spacing:1px; transition:transform .15s ease, filter .2s ease; }
   #new-world:hover { filter:brightness(1.15); transform:translateY(-1px); }
   #restart:active { transform:translateY(0); }
   .k { color:var(--muted); font-weight:700; background:#222b3d; padding:1px 8px; border-radius:6px; border:1px solid var(--line); }
@@ -158,8 +159,10 @@
     <canvas id="cv" width="560" height="560" role="img" aria-label="Лабиринт: игровое поле"></canvas>
   </div>
   <div id="legend" data-i18n="leg" data-html="1"></div>
-  <button id="restart" data-i18n="btnRestart">Заново (R)</button>
-  <button id="new-world" data-i18n="btnNewWorld">🎲 Новый мир (N)</button>
+  <div class="actions">
+    <button id="restart" data-i18n="btnRestart">Заново (R)</button>
+    <button id="new-world" data-i18n="btnNewWorld">🎲 Новый мир (N)</button>
+  </div>
   <div id="help" hidden>
     <div id="help-panel">
       <h2 data-i18n="helpTitle">Помощь</h2>
