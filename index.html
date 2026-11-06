@@ -717,7 +717,7 @@ function tryMove(dr,dc){
   if(over) return;
   const now = Date.now();
   if(now < moveLockUntil) return; // слишком часто — игнор
-  moveLockUntil = now + 300;
+  moveLockUntil = now + 150;
   if(skipMove > 0){ // завяз в болоте — пропуск хода, остаток задержки
     skipMove--;
     msg(t('w_swampSkip1')+skipMove+t('w_swampSkip2'));
