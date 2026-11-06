@@ -1107,7 +1107,7 @@ function render(){
   glow.addColorStop(0,'rgba(255,209,102,.5)'); glow.addColorStop(1,'rgba(255,209,102,0)');
   ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(C+CS/2,C+CS/2,26,0,7); ctx.fill();
   // метка прицеливания: если хоть один стрелок целится в игрока, мигает красный маркер
-  if(shooterAim.size){
+  if(shooterAim.size || bossAim.size){
     const blink = (Date.now()/400)%2 < 1;
     ctx.strokeStyle = blink ? '#e63946' : '#ffd166';
     ctx.lineWidth = 4;
@@ -1115,14 +1115,25 @@ function render(){
     // явная подсветка сектора, откуда целится каждый охотник (красный клин на периметре)
     const R1 = CS/2+3, R2 = CS/2+14, W = 0.5;
     const ccx = C+CS/2, ccy = C+CS/2;
+    ctx.fillStyle = blink ? 'rgba(230,57,70,.55)' : 'rgba(255,209,102,.45)';
+    // стрелки, целящиеся в игрока
     for(const s of shooters){
-      if(!shooterAim.has(s[0]+','+s[1])) continue; // показываем направление угрозы даже из тумана
-      const dr = s[0]-player[0], dc = s[1]-player[1]; // смещение охотника от игрока
-      const ang = Math.atan2(dr, dc); // направление сектора (canvas y вниз)
-      ctx.fillStyle = blink ? 'rgba(230,57,70,.55)' : 'rgba(255,209,102,.45)';
+      if(!shooterAim.has(s[0]+','+s[1])) continue;
+      const dr = s[0]-player[0], dc = s[1]-player[1];
+      const ang = Math.atan2(dr, dc);
       ctx.beginPath();
-      ctx.arc(ccx, ccy, R2, ang-W, ang+W);      // внешняя дуга
-      ctx.arc(ccx, ccy, R1, ang+W, ang-W, true); // внутренняя дуга обратно
+      ctx.arc(ccx, ccy, R2, ang-W, ang+W);
+      ctx.arc(ccx, ccy, R1, ang+W, ang-W, true);
+      ctx.closePath(); ctx.fill();
+    }
+    // охотники-боссы, прицелившиеся в игрока
+    for(const b of bosses){
+      if(!bossAim.has(b[0]+','+b[1])) continue;
+      const dr = b[0]-player[0], dc = b[1]-player[1];
+      const ang = Math.atan2(dr, dc);
+      ctx.beginPath();
+      ctx.arc(ccx, ccy, R2, ang-W, ang+W);
+      ctx.arc(ccx, ccy, R1, ang+W, ang-W, true);
       ctx.closePath(); ctx.fill();
     }
   }
