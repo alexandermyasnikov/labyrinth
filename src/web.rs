@@ -251,8 +251,11 @@ impl Web {
     }
     fn restart(&mut self, new_world: bool) {
         let now = now_ms(&self.win);
-        if new_world && !self.seed_is_url { self.g.seed = (now % 1_000_000) as u32; }
-        if new_world { self.g.new_world(now); } else { self.g.restart(now); }
+        // после победы следующий уровень — НОВЫЙ лабиринт (сид шагает),
+        // рестарт посреди уровня — тот же мир (как было в JS: R = same world)
+        let fresh = new_world || self.g.over_kind == Some(OverKind::Win);
+        if fresh && !self.seed_is_url { self.g.seed = (now % 1_000_000) as u32; }
+        if fresh { self.g.new_world(now); } else { self.g.restart(now); }
         self.anim_from = None; self.cam = 0.0; self.msg_until = 0;
         hidden(&self.doc, "overlay", true);
         hidden(&self.doc, "pause", true);

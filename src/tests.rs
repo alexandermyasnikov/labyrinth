@@ -1234,3 +1234,21 @@ use crate::game::*;
             }
         }
     }
+
+#[test]
+fn next_level_after_win_is_new_maze() {
+    // победа + старт следующего уровня: новый лабиринт, тот же сид-базовый уровень растёт
+    let mut g = game(42);
+    open_all(&mut g);
+    place_player(&mut g, (10, 9));
+    g.lakes.clear(); g.holes.clear(); g.trap.clear(); g.fire.clear(); g.swamps.clear();
+    g.exit = (10, 10); g.carrying = true; g.carrying_key = true;
+    let wall_before = g.wall;
+    g.try_move(0, 1, 1000);
+    assert_eq!(g.over_kind, Some(OverKind::Win));
+    assert_eq!(g.level, 2);
+    // старт следующего уровня — новый мир (как веб-ристарт после победы)
+    g.new_world(5000);
+    assert_ne!(g.wall, wall_before, "после победы — новый лабиринт");
+    assert_eq!(g.level, 2, "уровень не сброшен");
+}
