@@ -40,6 +40,12 @@
   .hud b { color:var(--accent); font-size:17px; text-shadow:0 0 12px rgba(255,209,102,.35); }
   .hud .heart { color:var(--heart); }
   .hud .seat { color:var(--seat); }
+  #lang-btn {
+    padding:4px 12px; margin-left:4px; font:inherit; font-size:12px; font-weight:700;
+    color:#ffe9a8; background:#222b3d; border:1px solid var(--line); border-radius:999px;
+    cursor:pointer; transition:transform .15s ease, filter .2s ease;
+  }
+  #lang-btn:hover { filter:brightness(1.15); transform:translateY(-1px); }
   #status {
     position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
     padding:9px 20px; border-radius:999px; font-weight:600; color:#ffe9a8;
@@ -107,52 +113,141 @@
 </head>
 <body>
   <h1>ЛАБИРИНТ</h1>
-  <div id="log">Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново</div>
+  <div id="log" data-i18n="logHint"></div>
   <div id="bestline"></div>
   <div class="hud">
-    <span>Здоровье: <b class="heart" id="hud-hp">♥♥♥</b></span>
-    <span>Бомбы: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
-    <span>Клад: <b id="hud-chest">✖</b></span>
-    <span>Ключ: <b id="hud-key">✖</b></span>
-    <span>Уровень: <b id="hud-level">1</b></span>
-    <span>Ходы: <b id="hud-moves">0</b></span>
-    <span>Цель: <b id="hud-target">0</b></span>
-    <span>Компас: <b id="hud-compass">?</b></span>
-    <span>Время: <b id="hud-time">--</b></span>
+    <span><span data-i18n="hudHealth">Здоровье</span>: <b class="heart" id="hud-hp">♥♥♥</b></span>
+    <span><span data-i18n="hudBombs">Бомбы</span>: <b class="seat" id="hud-bombs">💣💣💣💣💣</b></span>
+    <span><span data-i18n="hudChest">Клад</span>: <b id="hud-chest">✖</b></span>
+    <span><span data-i18n="hudKey">Ключ</span>: <b id="hud-key">✖</b></span>
+    <span><span data-i18n="hudLevel">Уровень</span>: <b id="hud-level">1</b></span>
+    <span><span data-i18n="hudMoves">Ходы</span>: <b id="hud-moves">0</b></span>
+    <span><span data-i18n="hudTarget">Цель</span>: <b id="hud-target">0</b></span>
+    <span><span data-i18n="hudCompass">Компас</span>: <b id="hud-compass">?</b></span>
+    <span><span data-i18n="hudTime">Время</span>: <b id="hud-time">--</b></span>
+    <button id="lang-btn" type="button"></button>
   </div>
   <div class="game-wrap">
-    <div id="status">Найди сундук и вынеси его через выход.</div>
+    <div id="status" data-i18n="statusStart">Найди сундук и вынеси его через выход.</div>
     <canvas id="cv" width="560" height="560"></canvas>
   </div>
-  <div id="legend">
-    <span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span>
-    <span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span>
-    <span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span>
-    <span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>
-  </div>
-  <button id="restart">Заново (R)</button>
+  <div id="legend" data-i18n="leg" data-html="1"></div>
+  <button id="restart" data-i18n="btnRestart">Заново (R)</button>
   <div id="help" hidden>
     <div id="help-panel">
-      <h2>Помощь</h2>
-      <p><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
-      <p><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
-      <p><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.</p>
+      <h2 data-i18n="helpTitle">Помощь</h2>
+      <p data-i18n="help1" data-html="1"><b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.</p>
+      <p data-i18n="help2" data-html="1"><b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь</p>
+      <p data-i18n="help3" data-html="1"><b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.</p>
     </div>
   </div>
   <div id="overlay" hidden>
     <div id="ov-panel">
       <h2 id="ov-title"></h2>
       <div id="ov-stats"></div>
-      <button id="ov-replay">Играть снова</button>
+      <button id="ov-replay" data-i18n="btnReplay">Играть снова</button>
     </div>
   </div>
   <script>
 "use strict";
+// ========== Локализация (RU/EN) ==========
+const I18N = {
+  ru: {
+    hudHealth:'Здоровье', hudBombs:'Бомбы', hudChest:'Клад', hudKey:'Ключ',
+    hudLevel:'Уровень', hudMoves:'Ходы', hudTarget:'Цель', hudCompass:'Компас', hudTime:'Время',
+    logHint:'Стрелки / WASD — ход · Shift+стрелка — рывок · B — бомба · R — заново',
+    statusStart:'Найди сундук и вынеси его через выход.', title:'Лабиринт',
+    leg:'<span>🧙 игрок</span><span>💰 сундук</span><span>🚩 выход</span><span>🗝️ ключ</span><span>💉 госпиталь</span><span>📦 арсенал</span><span>🌀 озеро</span><span>🕳 дырка</span><span>🪷 болото</span><span>🐻 медведь</span><span>⚠️ ловушка</span><span>🔥 огонь</span><span>🧟 зомби</span><span>👮 стрелок</span><span>🥷 босс</span><span><span class="k">B</span> — взорвать стену · <span class="k">R</span> — заново</span>',
+    btnRestart:'Заново (R)', btnReplay:'Играть снова',
+    helpTitle:'Помощь',
+    help1:'<b>Цель:</b> найди сундук 💰, возьми его и вынеси через выход 🚩.',
+    help2:'<b>Управление:</b> стрелки / WASD — ход · <span class="k">Shift</span>+стрелка — рывок через клетку · <span class="k">B</span> — бомба (стена) · <span class="k">R</span> — заново · <span class="k">H</span> — помощь',
+    help3:'<b>Спец-клетки:</b> 💉 госпиталь и 📦 арсенал восстанавливают здоровье и бомбы · 🌀 озеро несёт игрока течением каждые 2с · 🕳 дырка выкидывает из другой дырки · 🪷 болото — задерживает на 3 хода · ⚠️ ловушка ранит · 🐻 медведь ходит после твоего хода · 🥷 охотники-боссы всегда знают, где ты, и идут убить.',
+    w_river:'Течение озера несёт тебя.', w_hole:'Дырка — провал! Ты выходишь из другой дырки.',
+    w_arsenal:'Арсенал! Здоровье и бомбы восстановлены (5).', w_hospital:'Госпиталь! Здоровье восстановлено.',
+    w_trap:'Ловушка! Ты ранен. Здоровье: ', w_trapSafe:'Осторожно — здесь была ловушка, но ты не сработал её.',
+    w_fire:'Огненная ловушка! Ты обожжён. Здоровье: ', w_key:'Ключ взят! Теперь можно открыть дверь к выходу.',
+    w_chest:'Ты взял сундук! Отнеси его к выходу (🚩).', w_door:'Дверь закрыта. Нужен ключ 🗝️.',
+    w_exit:'Это выход. Но ты без клада. Вернись за сундуком.',
+    w_bear:'Медведь настиг тебя! Ранен. Здоровье: ', w_zombie:'Зомби укусил! Здоровье: ',
+    w_boss:'Охотник-босс подстрелил тебя! Здоровье: ', w_bossMelee:'Охотник-босс настиг тебя! Тяжёлое ранение. Здоровье: ',
+    w_shooter:'Стрелок ранил тебя выстрелом! Здоровье: ', w_dropChest:'Клад выпал и остался тут.',
+    w_dropChestTrap:'Клад остался на месте ранения.', w_noBombs:'Нет бомб! Найди арсенал.',
+    w_wall:'Стена!', w_dashCd:'Рывок ещё не готов.', w_dashWall:'За стеной прохода нет — рывок не прошёл.', w_dash:'Рывок!',
+    w_swamp:'Болото! Ноги увязли — пропускаешь ', w_swamp2:' ход', w_swamp3:' хода',
+    w_edge:'За краем стена — взрывать нечего.', w_stone:'Каменная стена — её не взорвать. Заряд израсходован.',
+    w_boom:'Бум! Стена ', w_boom2:' взорвана. Бомб осталось: ', w_noWall:'Здесь нет стены.', w_aim:'Выбери направление взрыва (стрелка / WASD).',
+    w_winMsg:'🏆 ПОБЕДА! Ты вынес сундук из лабиринта.', winTitle:'🏆 ПОБЕДА',
+    loseTitle:'💀 ПОРАЖЕНИЕ', timeoutTitle:'⏰ ВРЕМЯ ВЫШЛО',
+    w_winStats:'Уровень пройден за <b>', w_winStats2:'</b> ходов · ', w_newLevel:'<br>Новый уровень: <b>', w_newLevel2:'</b> — сложность растёт',
+    w_loseMsg:'💀 Ты погиб. Игра окончена.', timeoutMsg:'⏰ Время вышло!',
+    w_timeStats:'</b> ходов · ', w_loseStats:'Достигнуто: <b>', w_resetLevel:'<br>Уровень сброшен до 1',
+    w_timeoutStats:'Достигнуто: <b>', w_resetLevel2:'Уровень сброшен до 1',
+    w_reset1:'Уровень ', w_reset1b:'. У тебя нет карты. Ходи с помощью стрелок, изучай лабиринт.',
+    w_newLevelR:'! Сложность растёт. Нажми R, чтобы сыграть ещё.', w_R:'Нажми R, чтобы сыграть ещё.',
+    dir:['север','юг','запад','восток'], secs:'с',
+    record:'Рекорд: уровень <b>', record2:'</b>', bestL1:' · лучшее время L1 <b>',
+  },
+  en: {
+    hudHealth:'Health', hudBombs:'Bombs', hudChest:'Chest', hudKey:'Key',
+    hudLevel:'Level', hudMoves:'Moves', hudTarget:'Target', hudCompass:'Compass', hudTime:'Time',
+    logHint:'Arrows / WASD — move · Shift+arrow — dash · B — bomb · R — restart',
+    statusStart:'Find the chest and carry it out through the exit.', title:'Maze',
+    leg:'<span>🧙 player</span><span>💰 chest</span><span>🚩 exit</span><span>🗝️ key</span><span>💉 hospital</span><span>📦 arsenal</span><span>🌀 lake</span><span>🕳 hole</span><span>🪷 swamp</span><span>🐻 bear</span><span>⚠️ trap</span><span>🔥 fire</span><span>🧟 zombie</span><span>👮 shooter</span><span>🥷 boss</span><span><span class="k">B</span> — destroy wall · <span class="k">R</span> — restart</span>',
+    btnRestart:'Restart (R)', btnReplay:'Play again',
+    helpTitle:'Help',
+    help1:'<b>Goal:</b> find the chest 💰, pick it up and carry it through the exit 🚩.',
+    help2:'<b>Controls:</b> arrows / WASD — move · <span class="k">Shift</span>+arrow — dash one cell · <span class="k">B</span> — bomb (wall) · <span class="k">R</span> — restart · <span class="k">H</span> — help',
+    help3:'<b>Special cells:</b> 💉 hospital and 📦 arsenal restore health and bombs · 🌀 lake carries you every 2s · 🕳 hole drops you out of another hole · 🪷 swamp — keeps you for 3 moves · ⚠️ trap hurts · 🐻 bear moves after your turn · 🥷 hunter-bosses always know where you are and hunt you.',
+    w_river:'The lake carries you away.', w_hole:'Hole — drop! You exit from another hole.',
+    w_arsenal:'Arsenal! Health and bombs restored (5).', w_hospital:'Hospital! Health restored.',
+    w_trap:'Trap! You got hurt. Health: ', w_trapSafe:'Careful — there was a trap here, but you did not trigger it.',
+    w_fire:'Fire trap! You got burned. Health: ', w_key:'Key picked up! Now you can open the exit door.',
+    w_chest:'You picked up the chest! Carry it to the exit (🚩).', w_door:'Door is locked. You need the key 🗝️.',
+    w_exit:'This is the exit. But you have no chest. Go back for it.',
+    w_bear:'A bear caught you! Hurt. Health: ', w_zombie:'A zombie bit you! Health: ',
+    w_boss:'The hunter-boss shot you! Health: ', w_bossMelee:'The hunter-boss caught you! Heavy wound. Health: ',
+    w_shooter:'The shooter wounded you! Health: ', w_dropChest:'The chest dropped and stayed here.',
+    w_dropChestTrap:'The chest stayed where you were hurt.', w_noBombs:'No bombs! Find an arsenal.',
+    w_wall:'Wall!', w_dashCd:'Dash not ready.', w_dashWall:'No opening ahead — dash failed.', w_dash:'Dash!',
+    w_swamp:'Swamp! Your feet are stuck — you skip ', w_swamp2:' move', w_swamp3:' moves',
+    w_edge:'It is a wall at the edge — nothing to blow up.', w_stone:'Stone wall — cannot be blown up. Charge consumed.',
+    w_boom:'Boom! Wall ', w_boom2:' is destroyed. Bombs left: ', w_noWall:'No wall here.', w_aim:'Choose a bomb direction (arrow / WASD).',
+    w_winMsg:'🏆 VICTORY! You carried the chest out of the maze.', winTitle:'🏆 VICTORY',
+    loseTitle:'💀 DEFEAT', timeoutTitle:'⏰ TIME OUT',
+    w_winStats:'Level beaten in <b>', w_winStats2:'</b> moves · ', w_newLevel:'<br>New level: <b>', w_newLevel2:'</b> — difficulty rises',
+    w_loseMsg:'💀 You died. Game over.', timeoutMsg:'⏰ Time out!',
+    w_timeStats:'</b> moves · ', w_loseStats:'Reached: <b>', w_resetLevel:'<br>Level reset to 1',
+    w_timeoutStats:'Reached: <b>', w_resetLevel2:'Level reset to 1',
+    w_reset1:'Level ', w_reset1b:'. You have no map. Use the arrows, explore the maze.',
+    w_newLevelR:'! Difficulty rises. Press R to play again.', w_R:'Press R to play again.',
+    dir:['north','south','west','east'], secs:'s',
+    record:'Record: level <b>', record2:'</b>', bestL1:' · best time L1 <b>',
+  }
+};
+let lang = localStorage.getItem('labyrinth.lang');
+if(!lang || !I18N[lang]) lang = (navigator.language||'').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+lang = (lang==='ru'||lang==='en') ? lang : 'en';
+function t(key){ return I18N[lang][key] ?? I18N.ru[key]; }
+function setLang(l){ lang = (l==='ru'||l==='en')?l:'en'; localStorage.setItem('labyrinth.lang', lang); applyI18n(); updateHUD(); render(); }
+function applyI18n(){
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.getAttribute('data-i18n');
+    if(el.getAttribute('data-html')==='1') el.innerHTML = t(k); else el.textContent = t(k);
+  });
+  document.body.setAttribute('lang', lang);
+  const lb = document.getElementById('lang-btn');
+  if(lb){ lb.textContent = lang === 'ru' ? 'EN' : 'RU'; lb.title = t('logHint') ? '' : ''; }
+}
+function setupLangButton(){
+  const lb = document.getElementById('lang-btn');
+  if(lb) lb.addEventListener('click', ()=>{ setLang(lang === 'ru' ? 'en' : 'ru'); });
+}
 // ========== Случайности ==========
 function rand(max){ return Math.floor(Math.random()*max); }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=rand(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]; // вверх, вниз, влево, вправо
-const DN = ['вверх','вниз','влево','вправо'];
 const W = 20, H = 20;
 const SAVE_KEY = 'labyrinth.save';
 
@@ -238,7 +333,7 @@ function updateHUD(){
   hudTarget.textContent = shooterAim.size;
   const { dir } = directionToTarget();
   hudCompass.textContent = dir === '🏆' ? '●' : dir;
-  hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + 'с';
+  hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + t('secs');
 }
 
 function activeTarget(){
@@ -522,7 +617,7 @@ function init(){
   computeVisibility();
   markExplored();
   bestLine();
-  info('Уровень ' + level + '. У тебя нет карты. Ходи с помощью стрелок, изучай лабиринт.');
+  info(t('w_reset1') + level + t('w_reset1b'));
   timerId = setInterval(() => {
     if (over) return;
     timeLeft--;
@@ -622,12 +717,12 @@ function tryMove(dr,dc){
   if(over) return;
   if(skipMove > 0){ // завяз в болоте — пропуск хода, остаток задержки
     skipMove--;
-    msg('Ты завяз в болоте — пропускаешь ход ('+skipMove+' осталось).');
+    msg(t('w_swampSkip1')+skipMove+t('w_swampSkip2'));
     render();
     return;
   }
   const r=player[0], c=player[1];
-  if(wall[r][c][nd(dr,dc)]){ msg('Стена!'); sfx('wall'); render(); return; }
+  if(wall[r][c][nd(dr,dc)]){ msg(t('w_wall')); sfx('wall'); render(); return; }
   animFrom = [r,c];
   camR=camC=0; moving=true;
   player = [r+dr, c+dc];
@@ -643,18 +738,18 @@ function tryMove(dr,dc){
 function dash(dr,dc){
   if(over) return;
   const now = Date.now();
-  if(now < dashUntil){ msg('Рывок ещё не готов.'); return; }
+  if(now < dashUntil){ msg(t('w_dashCd')); return; }
   const r=player[0], c=player[1];
-  if(wall[r][c][nd(dr,dc)]){ msg('Стена!'); sfx('wall'); return; }
+  if(wall[r][c][nd(dr,dc)]){ msg(t('w_wall')); sfx('wall'); return; }
   const r2=r+dr*2, c2=c+dc*2;
-  if(wall[r+dr][c+dc][nd(dr,dc)]){ msg('За стеной прохода нет — рывок не прошёл.'); return; }
+  if(wall[r+dr][c+dc][nd(dr,dc)]){ msg(t('w_dashWall')); return; }
   // обе клетки на пути свободны
   player=[r2,c2];
   markExplored(); computeVisibility();
   dashUntil = now + 1500;
   dashFlash = { r: player[0], c: player[1], t0: now };
   sfx('step');
-  msg('Рывок!'); saveGame(); render();
+  msg(t('w_dash')); saveGame(); render();
 }
 // ===== Озёра: произвольной формы, внутри «крутит» течением =====
 function lakeOf(r,c){ for(const L of lakes) for(const [cr,cc] of L.cells) if(cr===r&&cc===c) return L; return null; }
@@ -705,7 +800,7 @@ function lakeTick(){
   player = move;
   sfx('river');
   markExplored();
-  msg('Течение озера несёт тебя.');
+  msg(t('w_river'));
   saveGame(); render();
 }
 
@@ -719,7 +814,7 @@ function onEnter(cell){
       player = move;
       sfx('river');
       markExplored();
-      msg('Течение озера несёт тебя.');
+      msg(t('w_river'));
     }
     // запускаем автоснос каждые 2с, пока игрок в озере
     if(!riverTimerId){
@@ -728,32 +823,32 @@ function onEnter(cell){
     saveGame(); render();
     return;
   }
-  if(inList(cell, holes)){ sfx('hole'); msg('Дырка — провал! Ты выходишь из другой дырки.'); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
-  if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg('Арсенал! Здоровье и бомбы восстановлены (5).'); return; }
-  if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg('Госпиталь! Здоровье восстановлено.'); return; }
+  if(inList(cell, holes)){ sfx('hole'); msg(t('w_hole')); player = nextHole(cell).slice(); markExplored(); camR=camC=1; moving=false; return; }
+  if(inList(cell, arsenal)){ sfx('heal'); health=5; bombs=5; msg(t('w_arsenal')); return; }
+  if(cell[0]===hospital[0]&&cell[1]===hospital[1]){ sfx('heal'); health=5; msg(t('w_hospital')); return; }
   if(inList(cell, trap)){
     if(rand(2)===0){
       sfx('bear');
       health--;
       hurt();
-      msg('Ловушка! Ты ранен. Здоровье: '+health);
-      if(carrying){ carrying=false; msg('Клад остался на месте ранения.'); saveGame(); }
+      msg(t('w_trap')+health);
+      if(carrying){ carrying=false; msg(t('w_dropChestTrap')); saveGame(); }
       if(health<=0) endLose();
-    } else msg('Осторожно — здесь была ловушка, но ты не сработал её.');
+    } else msg(t('w_trapSafe'));
     return;
   }
-  if(inList(cell, fire)){ sfx('bear'); health--; hurt(); msg('Огненная ловушка! Ты обожжён. Здоровье: '+health); if(health<=0) endLose(); return; }
-  if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg('Ключ взят! Теперь можно открыть дверь к выходу.'); keyPos=null; saveGame(); }
-  if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg('Ты взял сундук! Отнеси его к выходу (🚩).'); saveGame(); }
+  if(inList(cell, fire)){ sfx('bear'); health--; hurt(); msg(t('w_fire')+health); if(health<=0) endLose(); return; }
+  if(keyPos&&cell[0]===keyPos[0]&&cell[1]===keyPos[1]){ sfx('key'); carryingKey=true; msg(t('w_key')); keyPos=null; saveGame(); }
+  if(cell[0]===chest[0]&&cell[1]===chest[1]){ sfx('chest'); carrying=true; msg(t('w_chest')); saveGame(); }
   if(cell[0]===exitPos[0]&&cell[1]===exitPos[1]){
     if(carrying && carryingKey && health>0) endWin();
-    else if(carrying && !carryingKey) msg('Дверь закрыта. Нужен ключ 🗝️.');
-    else msg('Это выход. Но ты без клада. Вернись за сундуком.');
+    else if(carrying && !carryingKey) msg(t('w_door'));
+    else msg(t('w_exit'));
   }
   if(inList(cell, swamps)){ // болото: завяз — пропуск нескольких ходов
     sfx('hole');
     skipMove = SWAMP_SKIPS; // задержка на несколько ходов
-    msg('Болото! Ноги увязли — пропускаешь '+SWAMP_SKIPS+' хода.');
+    msg(t('w_swamp')+SWAMP_SKIPS+t('w_swamp3'));
     saveGame(); render();
   }
 }
@@ -783,8 +878,8 @@ function bearTurn(){
     if(visGrid[move[0]][move[1]]) sfx('esStep'); // шаг медведя слышен, если он на виду
     if(bear[0]===player[0]&&bear[1]===player[1]){
       sfx('bear');
-      health--; hurt(); msg('Медведь настиг тебя! Ранен. Здоровье: '+health);
-      if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+      health--; hurt(); msg(t('w_bear')+health);
+      if(carrying){ carrying=false; msg(t('w_dropChest')); saveGame(); }
       if(health<=0) endLose();
     }
   }
@@ -807,8 +902,8 @@ function zombieTurn(){
     if(visGrid[best[0]][best[1]]) sfx('esStep'); // шаг зомби слышен, если он на виду
     if(Math.abs(z[0]-player[0])+Math.abs(z[1]-player[1]) === 1){
       sfx('bear');
-      health--; hurt(); msg('Зомби укусил! Здоровье: '+health);
-      if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+      health--; hurt(); msg(t('w_zombie')+health);
+      if(carrying){ carrying=false; msg(t('w_dropChest')); saveGame(); }
       if(health<=0) endLose();
     }
   }
@@ -827,8 +922,8 @@ function bossTurn(){
       if(bossAim.has(key)){
         // прицелился в прошлый такт — выстрел
         sfx('danger'); sfx('shoot');
-        health--; hurt(); msg('Охотник-босс подстрелил тебя! Здоровье: '+health);
-        if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+        health--; hurt(); msg(t('w_boss')+health);
+        if(carrying){ carrying=false; msg(t('w_dropChest')); saveGame(); }
         if(health<=0) endLose();
         bossAim.delete(key);
         shots.push({ x1:b[0], y1:b[1], x2:player[0], y2:player[1], t0:Date.now() });
@@ -869,8 +964,8 @@ function hasClearShot(r1,c1,r2,c2){
 }
 function hurtPlayer(){
   sfx('bear');
-  health-=2; hurt(); msg('Охотник-босс настиг тебя! Тяжёлое ранение. Здоровье: '+health);
-  if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+  health-=2; hurt(); msg(t('w_bossMelee')+health);
+  if(carrying){ carrying=false; msg(t('w_dropChest')); saveGame(); }
   if(health<=0) endLose();
 }
 // Первый шаг кратчайшего пути BFS из (r1,c1) в (r2,c2). Возвращает [r,c] или null.
@@ -912,8 +1007,8 @@ function shooterTurn(){
         // уже целится в прошлый такт — повторяющийся сигнал опасности, затем выстрел
         sfx('danger');
         sfx('shoot');
-        health--; hurt(); msg('Стрелок ранил тебя выстрелом! Здоровье: '+health);
-        if(carrying){ carrying=false; msg('Клад выпал и остался тут.'); saveGame(); }
+        health--; hurt(); msg(t('w_shooter')+health);
+        if(carrying){ carrying=false; msg(t('w_dropChest')); saveGame(); }
         if(health<=0) endLose();
         shooterAim.delete(key);
         // анимация летящей пули (клеточные координаты)
@@ -939,16 +1034,16 @@ function shooterTurn(){
 // Бомба взрывает стену в заданном направлении (игрок не двигается).
 function bomb(dr,dc){
   if(over) return;
-  if(bombs<=0){ msg('Нет бомб! Найди арсенал.'); return; }
+  if(bombs<=0){ msg(t('w_noBombs')); return; }
   const r=player[0], c=player[1];
   const d=nd(dr,dc);
   let target=[r+dr,c+dc];
-  if(target[0]<0||target[0]>=H||target[1]<0||target[1]>=W){ msg('За краем стена — взрывать нечего.'); return; }
+  if(target[0]<0||target[0]>=H||target[1]<0||target[1]>=W){ msg(t('w_edge')); return; }
   if(wall[r][c][d]){
     if(rand(5)<3){ // 3 из 5 стен каменные — не взрываются, но заряд сгорает
       bombs--;
       sfx('wall');
-      msg('Каменная стена — её не взорвать. Заряд израсходован.');
+      msg(t('w_stone'));
       saveGame(); render();
       return;
     }
@@ -956,11 +1051,11 @@ function bomb(dr,dc){
     wall[target[0]][target[1]][d^1]=false;
     bombs--;
     sfx('bomb');
-    msg('Бум! Стена ' + DN[d] + ' взорвана. Бомб осталось: '+bombs);
+    msg(t('w_boom')+t('dir')[d]+t('w_boom2')+bombs);
     boom = { r: target[0], c: target[1], t0: Date.now() };
     saveGame();
     computeVisibility(); // стена ломается — пересчитываем зону видимости
-  } else msg('Здесь нет стены.');
+  } else msg(t('w_noWall'));
   render();
 }
 let aiming = false; // true: ждём направление для бомбы
@@ -985,8 +1080,8 @@ function saveBest(){
 }
 function bestLine(){
   const b = loadBest();
-  let s = 'Рекорд: уровень <b>'+b.level+'</b>';
-  if(b.time1!==null) s += ' · лучшее время L1 <b>'+b.time1.toFixed(1)+'</b>с';
+  let s = t('record')+b.level+t('record2');
+  if(b.time1!==null) s += t('bestL1')+b.time1.toFixed(1)+'</b>'+t('secs');
   bestlineEl.innerHTML = s;
 }
 
@@ -996,13 +1091,13 @@ function endWin(){
   sfx('win');
   saveGame();
   saveBest();
-  msg('🏆 ПОБЕДА! Ты вынес сундук из лабиринта.'); info('Уровень ' + level + '! Сложность растёт. Нажми R, чтобы сыграть ещё.');
+  msg(t('w_winMsg')); info(t('w_reset1') + level + t('w_newLevelR'));
   clearAllTimers();
   clearAims();
   const bBest = bestText(loadBest());
-  showOverlay('🏆 ПОБЕДА', '#ffd166',
-    'Уровень пройден за <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
-    '<br>Новый уровень: <b>' + level + '</b> — сложность растёт' +
+  showOverlay(t('winTitle'), '#ffd166',
+    t('w_winStats') + moves + t('w_winStats2') + (LEVEL_TIME - timeLeft) + t('secs') +
+    t('w_newLevel') + level + t('w_newLevel2') +
     (bBest ? '<br>Рекорд: ' + bBest : ''));
 }
 function endLose(){
@@ -1010,12 +1105,12 @@ function endLose(){
   moving=false; camR=camC=1;
   sfx('lose');
   saveGame();
-  msg('💀 Ты погиб. Игра окончена.'); info('Нажми R, чтобы сыграть ещё.');
+  msg(t('w_loseMsg')); info(t('w_R'));
   clearAllTimers();
   clearAims();
-  showOverlay('💀 ПОРАЖЕНИЕ', '#e63946',
-    'Достигнуто: <b>' + moves + '</b> ходов · ' + (LEVEL_TIME - timeLeft) + 'с' +
-    '<br>Уровень сброшен до 1');
+  showOverlay(t('loseTitle'), '#e63946',
+    t('w_loseStats') + moves + t('w_timeStats') + (LEVEL_TIME - timeLeft) + t('secs') +
+    t('w_resetLevel'));
 }
 function endTimeout(){
   if (over) return;
@@ -1027,10 +1122,10 @@ function endTimeout(){
   clearAims();
   carrying = false; // клад при проигрыше не переносится
   level = 1;
-  msg('⏰ Время вышло!');
-  info('Нажми R, чтобы сыграть ещё.');
-  showOverlay('⏰ ВРЕМЯ ВЫШЛО', '#f4a261',
-    'Достигнуто: <b>' + moves + '</b> ходов<br>Уровень сброшен до 1');
+  msg(t('timeoutMsg'));
+  info(t('w_R'));
+  showOverlay(t('timeoutTitle'), '#f4a261',
+    t('w_timeoutStats') + moves + '<br>' + t('w_resetLevel2'));
 }
 
 // ========== Рендер (камера за игроком, он всегда в центре) ==========
@@ -1267,8 +1362,8 @@ document.addEventListener('keydown', e=>{
   const dir = KEYMAP[e.code];
   if(e.code==='KeyB'){
     if(over) return;
-    if(bombs<=0){ msg('Нет бомб! Найди арсенал.'); return; }
-    aiming = true; sfx('aim'); msg('Выбери направление взрыва (стрелка / WASD).'); saveGame(); return;
+    if(bombs<=0){ msg(t('w_noBombs')); return; }
+    aiming = true; sfx('aim'); msg(t('w_aim')); saveGame(); return;
   }
   if(dir){
     e.preventDefault();
@@ -1280,6 +1375,8 @@ document.addEventListener('keydown', e=>{
 document.getElementById('restart').addEventListener('click', ()=>{ init(); render(); });
 ovReplay.addEventListener('click', ()=>{ init(); render(); });
 
+applyI18n();
+setupLangButton();
 init();
 requestAnimationFrame(frame);
   </script>
