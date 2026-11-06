@@ -24,6 +24,9 @@ struct Web {
     pad_dir: (i32, i32),
     seed_is_url: bool,
     msg_until: u64,
+    log_shown: String,
+    saved_combo: u32,
+    saved_explored: u32,
 }
 #[derive(Clone)]
 struct Particle { x: f64, y: f64, vx: f64, vy: f64, life: u64, t0: u64, color: String, size: f64 }
@@ -106,13 +109,15 @@ impl Web {
         let query = win.location().search().unwrap_or_default();
         let url_seed = parse_seed_from_query(&query);
         let seed = url_seed.unwrap_or_else(|| (now_ms(&win) % 1_000_000) as u32);
-        let lang = storage_get(&win, "labyrinth.lang").and_then(|s| Lang::from_code(&s)).unwrap_or(Lang::Ru);
+        let lang = storage_get(&win, "labyrinth.lang").and_then(|s| Lang::from_code(&s))
+            .unwrap_or_else(|| match win.navigator().language() { Some(l) if l.to_lowercase().starts_with("ru") => Lang::Ru, _ => Lang::En });
         let g = Game::new(seed, lang, load_stats(&win), load_best(&win));
         Rc::new(RefCell::new(Web {
             g, ctx, doc, win, tick_id: None, bear_id: None, zombie_id: None,
             shooter_id: None, boss_id: None, river_id: None, anim_id: None,
             actx: None, particles: vec![], anim_from: None, cam: 0.0, pad_dir: (-1, 0),
             seed_is_url: url_seed.is_some(), msg_until: 0,
+            log_shown: String::new(), saved_combo: 0, saved_explored: 0,
         }))
     }
 
@@ -170,8 +175,12 @@ impl Web {
         if sfxs.contains(&Sfx::Win) { self.burst("#ffd166", 40); }
         if sfxs.contains(&Sfx::Bear) { self.g.shake = 6.0; }
         let now = now_ms(&self.win);
+        // персистентный #log (info() в JS) vs всплывающий тост #status (msg())
+        if self.log_shown != self.g.log {
+            txt(&self.doc, "log", &self.g.log);
+            self.log_shown = self.g.log.clone();
+        }
         if !self.g.msg.is_empty() && self.msg_until <= now {
-            txt(&self.doc, "log", &self.g.msg);
             txt(&self.doc, "status", &self.g.msg);
             if let Some(s) = el(&self.doc, "status") { let _ = s.class_list().add_1("show"); }
             self.msg_until = now + 2600;
@@ -194,6 +203,11 @@ impl Web {
         if !self.g.new_ach.is_empty() {
             save_stats(&self.win.clone(), &self.g.stats);
             self.g.new_ach.clear();
+        }
+        if self.g.stats.best_combo != self.saved_combo || self.g.stats.explored_max != self.saved_explored {
+            self.saved_combo = self.g.stats.best_combo;
+            self.saved_explored = self.g.stats.explored_max;
+            save_stats(&self.win.clone(), &self.g.stats);
         }
         // река: старт/стоп автосноса
         if self.g.river_on && self.river_id.is_none() {
@@ -296,6 +310,10 @@ impl Web {
             "KeyP" | "Escape" => { self.toggle_pause(); return; }
             "KeyR" => { self.restart(false); return; }
             "KeyN" => { self.restart(true); return; }
+            _ => {}
+        }
+        if self.g.paused { return; }
+        match code.as_str() {
             "KeyH" => { self.g.toggle_help(); hidden(&self.doc, "help", !self.g.help_open); self.render(); return; }
             "KeyB" => {
                 if self.g.over { return; }
@@ -307,7 +325,6 @@ impl Web {
             }
             _ => {}
         }
-        if self.g.paused { return; }
         let dir = match code.as_str() {
             "ArrowUp" | "KeyW" => Some((-1, 0)),
             "ArrowDown" | "KeyS" => Some((1, 0)),
@@ -326,6 +343,7 @@ impl Web {
 
     fn apply_i18n(&self) {
         let lang = self.g.lang;
+        self.doc.set_title(&t(lang, "title"));
         if let Some(d) = self.doc.document_element() { let _ = d.set_attribute("lang", lang.code()); }
         if let Ok(nodes) = self.doc.query_selector_all("[data-i18n]") {
             for i in 0..nodes.length() {
@@ -686,5 +704,6 @@ pub fn run() {
     }
     w.borrow_mut().start_timers();
     w.borrow_mut().apply_i18n();
+    w.borrow_mut().flush();
     w.borrow_mut().render();
 }

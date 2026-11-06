@@ -1264,3 +1264,28 @@ fn restart_gives_up_to_level_1_same_world() {
     assert_eq!(g.wall, wall, "тот же мир");
     assert_eq!(g.health, 5); assert_eq!(g.moves, 0);
 }
+
+#[test]
+fn log_and_toast_split_like_js() {
+    // JS: info() — персистентный #log, msg() — тост. Rust: поле log отдельно от msg.
+    let mut g = game(42);
+    assert!(g.log.contains("Уровень 1"), "init ставит строку уровня в #log: {}", g.log);
+    open_all(&mut g);
+    place_player(&mut g, (10, 9));
+    g.lakes.clear(); g.holes.clear(); g.trap.clear(); g.fire.clear(); g.swamps.clear();
+    g.exit = (10, 10); g.carrying = true; g.carrying_key = true;
+    g.try_move(0, 1, 1000);
+    assert_eq!(g.msg, t(Lang::Ru, "w_winMsg"), "тост победы");
+    assert!(g.log.contains("2") && g.log.contains("Нажми R"), "строка следующего уровня в #log: {}", g.log);
+}
+#[test]
+fn lose_and_timeout_set_log_r() {
+    let mut g = game(1);
+    g.health = 1;
+    g.damage_player(1, "w_bear");
+    assert_eq!(g.log, t(Lang::Ru, "w_R"));
+    let mut g2 = game(1);
+    g2.time_left = 1;
+    g2.tick_second(0);
+    assert_eq!(g2.log, t(Lang::Ru, "w_R"));
+}

@@ -12,7 +12,7 @@ web-sys = { version = "0.3", features = [
   "KeyboardEvent", "PointerEvent", "MouseEvent", "NodeList", "DomTokenList",
   "AudioContext", "AudioContextState", "BaseAudioContext", "AudioDestinationNode",
   "AudioParam", "OscillatorNode", "OscillatorType", "GainNode", "Storage",
-  "Location", "Performance",
+  "Location", "Performance", "Navigator",
 ] }
 gloo = { version = "0.10", features = ["timers"] }
 js-sys = "0.3"

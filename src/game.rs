@@ -280,7 +280,7 @@ pub struct Game {
     pub shots: Vec<Shot>, pub boom: Option<Fx>, pub dash_flash: Option<Fx>,
     pub river_on: bool, pub shake: f64,
     pub now_ms: u64,
-    pub msg: String, pub stats: Stats, pub best: Best,
+    pub msg: String, pub log: String, pub stats: Stats, pub best: Best,
     pub sfx: Vec<Sfx>, pub new_ach: Vec<String>,
 }
 
@@ -305,7 +305,7 @@ impl Game {
             vis: vec![vec![false; W]; H], explored: vec![vec![false; W]; H],
             shooter_aim: HashSet::new(), boss_aim: HashSet::new(),
             shots: vec![], boom: None, dash_flash: None, river_on: false, shake: 0.0,
-            msg: String::new(), stats, best, sfx: vec![], new_ach: vec![],
+            msg: String::new(), log: String::new(), stats, best, sfx: vec![], new_ach: vec![],
             now_ms: 0,
         };
         g.init_world(now0(), false);
@@ -407,7 +407,7 @@ impl Game {
         self.compute_visibility();
         self.mark_explored();
         let lv = self.level;
-        self.say(format!("{}{}{}", self.t("w_reset1"), lv, self.t("w_reset1b")));
+        self.log = format!("{}{}{}", self.t("w_reset1"), lv, self.t("w_reset1b"));
     }
 
     // «Заново» (R / кнопка посреди уровня): бросить уровень, начать с 1-го, тот же мир.
@@ -908,12 +908,14 @@ impl Game {
         self.save_best(win_time as f64);
         self.collect_achievements();
         self.say(self.t("w_winMsg").to_string());
+        self.log = format!("{}{}{}", self.t("w_reset1"), self.level, self.t("w_newLevelR"));
     }
     pub fn end_lose(&mut self) {
         self.over = true; self.over_kind = Some(OverKind::Lose);
         self.level = 1;
         self.sfx(Sfx::Lose);
         self.say(self.t("w_loseMsg").to_string());
+        self.log = self.t("w_R").to_string();
     }
     pub fn end_timeout(&mut self) {
         if self.over { return; }
@@ -922,6 +924,7 @@ impl Game {
         self.carrying = false;
         self.level = 1;
         self.say(self.t("timeoutMsg").to_string());
+        self.log = self.t("w_R").to_string();
     }
     fn save_best(&mut self, win_time: f64) {
         let passed = self.level - 1;
