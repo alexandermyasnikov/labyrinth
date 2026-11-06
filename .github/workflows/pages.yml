@@ -10,7 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-# одно публикация за раз; отменяем более старые запуски
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -28,7 +27,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # на сайт уходит только сама игра index.html
           path: './index.html'
 
   deploy:
