@@ -8,7 +8,7 @@
 
 ![Лабиринт — геймплей](assets/screenshot-1.png)
 
-<video controls width="720" autoplay muted loop playsinline src="assets/gameplay-1.webm"></video>
+![Лабиринт — геймплей (GIF)](assets/gameplay-1.gif)
 
 ## Звук
 Синтезируется на лету через Web Audio — без аудиофайлов: шаги, выстрелы, взрывы, рычание медведей.
