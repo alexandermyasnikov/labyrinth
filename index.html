@@ -200,11 +200,11 @@ function updateHUD(){
   const [ar, ac] = activeTarget();
   const [pr, pc] = player;
   let dir = '';
-  if (ar === pr && ac === pc) dir = '●';
-  else if (ar < pr) dir = '⬆';
-  else if (ar > pr) dir = '⬇';
-  else if (ac < pc) dir = '⬅';
-  else if (ac > pc) dir = '➡';
+  // направление по оси с большей разницей координат (максимальное)
+  const dr = pr - ar, dc = pc - ac;
+  if (dr === 0 && dc === 0) dir = '●';
+  else if (Math.abs(dr) >= Math.abs(dc)) dir = dr < 0 ? '⬆' : '⬇';
+  else dir = dc < 0 ? '⬅' : '➡';
   hudCompass.textContent = dir;
   hudTime.textContent = (timeLeft > 999 ? 999 : timeLeft) + 'с';
 }
@@ -1017,10 +1017,10 @@ function render(){
     const [ar, ac] = activeTarget();
     const [pr, pc] = player;
     let dx = 0, dy = 0;
-    if      (ar < pr) dy = -1;
-    else if (ar > pr) dy =  1;
-    else if (ac < pc) dx = -1;
-    else if (ac > pc) dx =  1;
+    // направление по оси с большей разницей (максимальное)
+    const dr = pr - ar, dc = pc - ac;
+    if      (Math.abs(dr) >= Math.abs(dc)){ if (dr!==0) dy = dr<0?-1:1; else dx = dc<0?-1:1; }
+    else                                  { if (dc!==0) dx = dc<0?-1:1; else dy = dr<0?-1:1; }
     ctx.save();
     ctx.font = '46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.globalAlpha = 0.85;
